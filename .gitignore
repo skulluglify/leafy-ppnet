@@ -1,6 +1,6 @@
 pkg
 build
-temp
+tmp
 
 # Binaries for programs and plugins
 *.exe
