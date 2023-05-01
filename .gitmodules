@@ -1,3 +1,3 @@
-[submodule "runtime/ppnet"]
-	path = runtime/ppnet
+[submodule "go/pkg/skfw"]
+	path = go/pkg/skfw
 	url = https://github.com/skulluglify/papayanet

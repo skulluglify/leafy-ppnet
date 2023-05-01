@@ -1,6 +1,12 @@
-# lms-ppnet
-![docker workflow](https://github.com/skulluglify/lms-ppnet/actions/workflows/docker.yml/badge.svg)
+# Leafy (Fruit Marketplace)
 
-LMS (Learning Management System) build with PpNet (PapayaNet)
+Leafy is fruit marketplace, not only fruit, vegetables too
 
-- [PpNet (PapayaNet)](https://github.com/skulluglify/papayanet) is a backend tools and web framework for API server, built-in from library Echo, GORM, Etc.  
+Powered by [PapayaNet](https://github.com/skulluglify/papayanet) framework API, the bundling library with Fiber, GORM, and PostgreSQL
+
+Features
+- Documentation with Swagger (OpenAPI 3.0)
+- Basic Authentication with JWT
+- Control Resource Shared
+- Request Validation
+- Session

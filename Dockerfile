@@ -8,12 +8,17 @@ ENV GOPATH /go
 ENV GOCACHE /go-build
 
 # caches requirement for runtime/ppnet
-COPY runtime/ppnet/go.mod .
+COPY src/skfw/go.mod .
 RUN --mount=type=cache,target=/go/pkg/mod/cache \
     go mod download
 
 # caches requirement for app
-COPY . .
+COPY app .
+COPY pkg .
+COPY go.mod .
+COPY go.work .
+COPY .env .
+COPY Makefile .
 RUN --mount=type=cache,target=/go/pkg/mod/cache \
     --mount=type=cache,target=/go-build \
     go build -o bin/backend main.go

@@ -1,11 +1,23 @@
 package main
 
 import (
-	"leafy.ppnet/app"
-	"os"
+	"leafy/app"
+	"skfw/papaya"
 )
 
 func main() {
 
-	app.App(os.Args)
+	pn := papaya.NetNew()
+
+	if err := app.App(pn); err != nil {
+
+		pn.Logger().Error(err)
+	}
+
+	if err := pn.Close(); err != nil {
+
+		pn.Logger().Error(err)
+	}
+
+	pn.Logger().Log("Shutdown ...")
 }

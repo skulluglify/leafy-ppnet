@@ -49,4 +49,4 @@ volumes:
 
 secrets:
   pg-passwd:
-    file: ./config/db/postgresql/passwd
+    file: config/db/postgres/passwd.txt
