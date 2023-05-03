@@ -20,3 +20,6 @@ up:
 
 down:
 	docker-compose down
+
+dump:
+	sudo -u postgres pg_dump --dbname leafy --schema-only >postgresql.sql

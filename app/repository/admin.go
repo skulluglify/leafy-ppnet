@@ -6,27 +6,30 @@ import (
 	"leafy/app/models"
 )
 
-type UserRepository struct {
+type AdminRepository struct {
 	DB *gorm.DB
 }
 
-type UserRepositoryImpl interface {
+type AdminRepositoryImpl interface {
 	Init(DB *gorm.DB) error
 	SearchFast(username string, email string) (*models.User, error)
+
+	CatchUsers(offset int, limit int) ([]models.User, error)
+
 	NewSession()
 }
 
-func UserRepositoryNew(DB *gorm.DB) (UserRepositoryImpl, error) {
+func AdminRepositoryNew(DB *gorm.DB) (AdminRepositoryImpl, error) {
 
-	userRepo := &UserRepository{}
-	if err := userRepo.Init(DB); err != nil {
+	adminRepo := &AdminRepository{}
+	if err := adminRepo.Init(DB); err != nil {
 
 		return nil, err
 	}
-	return userRepo, nil
+	return adminRepo, nil
 }
 
-func (u *UserRepository) Init(DB *gorm.DB) error {
+func (u *AdminRepository) Init(DB *gorm.DB) error {
 
 	if DB != nil {
 
@@ -38,7 +41,7 @@ func (u *UserRepository) Init(DB *gorm.DB) error {
 	return errors.New("DB is NULL")
 }
 
-func (u *UserRepository) SearchFast(username string, email string) (*models.User, error) {
+func (u *AdminRepository) SearchFast(username string, email string) (*models.User, error) {
 
 	u.NewSession()
 
@@ -79,7 +82,21 @@ func (u *UserRepository) SearchFast(username string, email string) (*models.User
 	return nil, errors.New("unable to get user information")
 }
 
-func (u *UserRepository) NewSession() {
+func (u *AdminRepository) CatchUsers(offset int, limit int) ([]models.User, error) {
+
+	u.NewSession()
+
+	var users []models.User
+
+	if u.DB.Preload("Sessions").Offset(offset).Limit(limit).Find(&users).Error != nil {
+
+		return users, errors.New("unable to find users")
+	}
+
+	return users, nil
+}
+
+func (u *AdminRepository) NewSession() {
 
 	u.DB = u.DB.Session(&gorm.Session{})
 }

@@ -17,8 +17,9 @@ func UserController(pn papaya.NetImpl, router swag.SwagRouterImpl) error {
 	//userRepo, _ := repository.UserRepositoryNew(GORM)
 
 	router.Get("/info", &m.KMap{
-		"AuthToken": true,
-		"request":   &m.KMap{},
+		"AuthToken":   true,
+		"description": "User Info",
+		"request":     &m.KMap{},
 		"responses": swag.OkJSON(&m.KMap{
 			"name":         "string",
 			"username":     "string",

@@ -3,6 +3,7 @@ package app
 import (
 	"leafy/app/controllers"
 	"leafy/app/models"
+	"leafy/app/tasks"
 	"skfw/papaya"
 	"skfw/papaya/bunny/swag"
 	"skfw/papaya/pigeon/templates/basicAuth/repository"
@@ -23,9 +24,16 @@ func App(pn papaya.NetImpl) error {
 	})
 
 	mainGroup := swagger.Group("/api/v1", "Schema")
-	userGroup := mainGroup.Group("/users", "Authentication")
 
+	anonymGroup := mainGroup.Group("/", "Anonymous")
+	userGroup := mainGroup.Group("/users", "Authentication")
+	adminGroup := mainGroup.Group("/admin", "Administrator")
+
+	anonymRouter := anonymGroup.Router()
 	userRouter := userGroup.Router()
+	adminRouter := adminGroup.Router()
+
+	controllers.AnonymController(pn, anonymRouter)
 
 	expired := time.Hour * 4
 	activeDuration := time.Minute * 30 // interval
@@ -34,9 +42,12 @@ func App(pn papaya.NetImpl) error {
 	basicAuth := repository.BasicAuthNew(conn, expired, activeDuration, maxSessions)
 	basicAuth.Bind(swagger, userRouter)
 
+	swagger.AddTask(tasks.MakeAdminTask())
+
 	gorm.AutoMigrate(&models.User{}, &models.Session{}, &models.Product{}, &models.Cart{}, &models.Transaction{})
 
 	controllers.UserController(pn, userRouter)
+	controllers.AdminController(pn, adminRouter)
 
 	swagger.Start()
 
