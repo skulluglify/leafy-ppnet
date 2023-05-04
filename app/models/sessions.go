@@ -4,11 +4,11 @@ import "skfw/papaya/pigeon/templates/basicAuth/models"
 
 // requirement for basicAuth
 
-type Session struct {
+type Sessions struct {
 	*models.SessionModel
 }
 
-func (Session) TableName() string {
+func (Sessions) TableName() string {
 
 	return "sessions"
 }

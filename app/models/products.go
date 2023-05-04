@@ -5,7 +5,7 @@ import (
 	"gorm.io/gorm"
 )
 
-type Product struct {
+type Products struct {
 	*gorm.Model
 	ID          string          `gorm:"type:VARCHAR(32);primary" json:"id"`
 	Name        string          `gorm:"not null" json:"name"`
@@ -15,7 +15,7 @@ type Product struct {
 	Price       decimal.Decimal `json:"price"`
 }
 
-func (Product) TableName() string {
+func (Products) TableName() string {
 
 	return "products"
 }

@@ -4,11 +4,13 @@ import (
 	"encoding/json"
 	"github.com/shopspring/decimal"
 	"leafy/app/repository"
+	"leafy/app/util"
 	"net/http"
 	"skfw/papaya"
 	"skfw/papaya/bunny/swag"
 	"skfw/papaya/koala/kornet"
 	m "skfw/papaya/koala/mapping"
+	"skfw/papaya/koala/pp"
 	repo "skfw/papaya/pigeon/templates/basicAuth/repository"
 )
 
@@ -17,8 +19,10 @@ func AdminController(pn papaya.NetImpl, router swag.SwagRouterImpl) error {
 	conn := pn.Connection()
 	gorm := conn.GORM()
 
-	adminRepo, _ := repository.AdminRepositoryNew(gorm)
+	userRepo, _ := repository.UserRepositoryNew(gorm)
 	productRepo, _ := repository.ProductRepositoryNew(gorm)
+
+	catchAllTransactions := util.TemplateCatchAllTransactions(pn)
 
 	router.Get("/sessions", &m.KMap{
 		"AuthToken":   true,
@@ -35,8 +39,8 @@ func AdminController(pn papaya.NetImpl, router swag.SwagRouterImpl) error {
 
 		kReq, _ := ctx.Kornet()
 
-		page := ValueToInt(kReq.Query.Get("page"))
-		size := ValueToInt(kReq.Query.Get("size"))
+		page := util.ValueToInt(kReq.Query.Get("page"))
+		size := util.ValueToInt(kReq.Query.Get("size"))
 
 		var offset int
 
@@ -44,7 +48,7 @@ func AdminController(pn papaya.NetImpl, router swag.SwagRouterImpl) error {
 
 			offset = page*size - size
 
-			users, err := adminRepo.CatchUsers(offset, size)
+			users, err := userRepo.CatchAll(offset, size)
 			if err != nil {
 
 				return ctx.Status(http.StatusInternalServerError).JSON(kornet.MessageNew(err.Error(), true))
@@ -116,7 +120,7 @@ func AdminController(pn papaya.NetImpl, router swag.SwagRouterImpl) error {
 		name := m.KValueToString(data.Get("name"))
 		description := m.KValueToString(data.Get("description"))
 		price := decimal.NewFromFloat(m.KValueToFloat(data.Get("price")))
-		stocks := ValueToInt(data.Get("stocks"))
+		stocks := util.ValueToInt(data.Get("stocks"))
 
 		if _, err := productRepo.CreateFast(name, description, price, stocks); err != nil {
 
@@ -131,8 +135,10 @@ func AdminController(pn papaya.NetImpl, router swag.SwagRouterImpl) error {
 		"Admin":       true,
 		"description": "Update Product",
 		"request": &m.KMap{
+			"params": &m.KMap{
+				"id": "string",
+			},
 			"body": swag.JSON(&m.KMap{
-				"id":          "string",
 				"name":        "string",
 				"description": "string",
 				"price":       "number",
@@ -144,6 +150,8 @@ func AdminController(pn papaya.NetImpl, router swag.SwagRouterImpl) error {
 
 		kReq, _ := ctx.Kornet()
 
+		ids := m.KValueToString(kReq.Query.Get("id"))
+
 		data := &m.KMap{}
 
 		if err := json.Unmarshal(kReq.Body.ReadAll(), data); err != nil {
@@ -151,11 +159,10 @@ func AdminController(pn papaya.NetImpl, router swag.SwagRouterImpl) error {
 			return ctx.Status(http.StatusInternalServerError).JSON(kornet.MessageNew("unable to parse data", true))
 		}
 
-		ids := m.KValueToString(data.Get("id"))
 		name := m.KValueToString(data.Get("name"))
 		description := m.KValueToString(data.Get("description"))
 		price := decimal.NewFromFloat(m.KValueToFloat(data.Get("price")))
-		stocks := ValueToInt(data.Get("stocks"))
+		stocks := util.ValueToInt(data.Get("stocks"))
 
 		id := repo.Ids(ids)
 
@@ -215,6 +222,71 @@ func AdminController(pn papaya.NetImpl, router swag.SwagRouterImpl) error {
 
 		return ctx.Status(http.StatusOK).JSON(kornet.MessageNew("delete product", false))
 
+	})
+
+	router.Get("/transactions", &m.KMap{
+		"AuthToken":   true,
+		"Admin":       true,
+		"description": "Catch All Transactions",
+		"request": &m.KMap{
+			"params": &m.KMap{
+				"page":      "number",
+				"size":      "number",
+				"maxCatch?": "number",
+			},
+		},
+		"responses": swag.OkJSON([]m.KMapImpl{}),
+	}, func(ctx *swag.SwagContext) error {
+
+		var data []m.KMapImpl
+
+		kReq, _ := ctx.Kornet()
+
+		page := util.ValueToInt(kReq.Query.Get("page"))
+		size := util.ValueToInt(kReq.Query.Get("size"))
+		maxCatch := pp.QInt(util.ValueToInt(kReq.Query.Get("maxCatch")), 200)
+
+		var offset int
+
+		if page > 0 {
+
+			data = make([]m.KMapImpl, 0)
+
+			offset = page*size - size
+
+			users, err := userRepo.CatchAll(offset, size)
+
+			if err != nil {
+				return ctx.Status(http.StatusInternalServerError).JSON(kornet.MessageNew(err.Error(), true))
+			}
+
+			for _, user := range users {
+
+				userId := repo.Ids(user.ID)
+
+				var transactions []m.KMapImpl
+
+				if transactions, err = catchAllTransactions(userId, 1, maxCatch); err != nil {
+
+					return ctx.Status(http.StatusInternalServerError).JSON(kornet.MessageNew(err.Error(), true))
+				}
+
+				data = append(data, &m.KMap{
+					"user": &m.KMap{
+						"id":       user.ID,
+						"name":     user.Name,
+						"username": user.Username,
+						"email":    user.Email,
+						"phone":    user.Phone,
+					},
+					"transactions": transactions,
+				})
+			}
+
+			return ctx.Status(http.StatusOK).JSON(data)
+		}
+
+		return ctx.Status(http.StatusBadRequest).JSON(kornet.MessageNew("page is zero", true))
 	})
 
 	return nil

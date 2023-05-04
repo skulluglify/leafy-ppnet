@@ -27,10 +27,12 @@ func App(pn papaya.NetImpl) error {
 
 	anonymGroup := mainGroup.Group("/", "Anonymous")
 	userGroup := mainGroup.Group("/users", "Authentication")
+	actionGroup := mainGroup.Group("/users", "Action")
 	adminGroup := mainGroup.Group("/admin", "Administrator")
 
 	anonymRouter := anonymGroup.Router()
 	userRouter := userGroup.Router()
+	actionRouter := actionGroup.Router()
 	adminRouter := adminGroup.Router()
 
 	controllers.AnonymController(pn, anonymRouter)
@@ -44,9 +46,18 @@ func App(pn papaya.NetImpl) error {
 
 	swagger.AddTask(tasks.MakeAdminTask())
 
-	gorm.AutoMigrate(&models.User{}, &models.Session{}, &models.Product{}, &models.Cart{}, &models.Transaction{})
+	gorm.AutoMigrate(
+		&models.Users{},
+		&models.Sessions{},
+		&models.Products{},
+		&models.Cart{},
+		&models.Transactions{},
+		&models.Category{},
+		&models.Categories{},
+		&models.Nutrients{},
+	)
 
-	controllers.UserController(pn, userRouter)
+	controllers.ActionController(pn, actionRouter)
 	controllers.AdminController(pn, adminRouter)
 
 	swagger.Start()

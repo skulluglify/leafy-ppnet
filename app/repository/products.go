@@ -16,14 +16,15 @@ type ProductRepository struct {
 type ProductRepositoryImpl interface {
 	Init(DB *gorm.DB) error
 
-	SearchFast(name string) (*models.Product, error)
-	CreateFast(name string, description string, price decimal.Decimal, stocks int) (*models.Product, error)
+	SearchFast(name string) (*models.Products, error)
+	CreateFast(name string, description string, price decimal.Decimal, stocks int) (*models.Products, error)
 
-	CatchAllProducts(offset int, limit int) ([]models.Product, error)
+	CatchAll(offset int, limit int) ([]models.Products, error)
 
-	SearchFastById(id uuid.UUID) (*models.Product, error)
+	SearchFastById(id uuid.UUID) (*models.Products, error)
+	SearchUnscopedFastById(id uuid.UUID) (*models.Products, error)
 
-	Update(id uuid.UUID, product *models.Product) error
+	Update(id uuid.UUID, product *models.Products) error
 
 	DeleteFast(id uuid.UUID) error
 
@@ -40,11 +41,11 @@ func ProductRepositoryNew(DB *gorm.DB) (ProductRepositoryImpl, error) {
 	return productRepo, nil
 }
 
-func (u *ProductRepository) Init(DB *gorm.DB) error {
+func (p *ProductRepository) Init(DB *gorm.DB) error {
 
 	if DB != nil {
 
-		u.DB = DB.Model(&models.Product{})
+		p.DB = DB.Model(&models.Products{})
 
 		return nil
 	}
@@ -52,32 +53,36 @@ func (u *ProductRepository) Init(DB *gorm.DB) error {
 	return errors.New("DB is NULL")
 }
 
-func (u *ProductRepository) CatchAllProducts(offset int, limit int) ([]models.Product, error) {
+func (p *ProductRepository) CatchAll(offset int, limit int) ([]models.Products, error) {
 
-	var products []models.Product
-	products = make([]models.Product, 0)
+	p.NewSession()
 
-	if u.DB.Offset(offset).Limit(limit).Find(&products).Error != nil {
+	var products []models.Products
+	products = make([]models.Products, 0)
+
+	if p.DB.Offset(offset).Limit(limit).Order("created_at DESC").Find(&products).Error != nil {
 
 		return products, errors.New("unable to get product information")
 	}
 
+	// pass empty array
+	//return products, errors.New("products is empty")
 	return products, nil
 }
 
-func (u *ProductRepository) SearchFast(name string) (*models.Product, error) {
+func (p *ProductRepository) SearchFast(name string) (*models.Products, error) {
 
-	u.NewSession()
+	p.NewSession()
 
 	if name == "" {
 
 		return nil, errors.New("name is empty")
 	}
 
-	var products []models.Product
-	products = make([]models.Product, 0)
+	var products []models.Products
+	products = make([]models.Products, 0)
 
-	if u.DB.Where("name = ?", name).Limit(1).Find(&products).Error != nil {
+	if p.DB.Where("name = ?", name).Limit(1).Find(&products).Error != nil {
 
 		return nil, errors.New("unable to search product")
 	}
@@ -87,22 +92,22 @@ func (u *ProductRepository) SearchFast(name string) (*models.Product, error) {
 		return &products[0], nil
 	}
 
-	return nil, nil
+	return nil, errors.New("product is empty")
 }
 
-func (u *ProductRepository) SearchFastById(id uuid.UUID) (*models.Product, error) {
+func (p *ProductRepository) SearchFastById(id uuid.UUID) (*models.Products, error) {
 
-	u.NewSession()
+	p.NewSession()
 
 	if repository.EmptyIdx(id) {
 
 		return nil, errors.New("id is empty")
 	}
 
-	var products []models.Product
-	products = make([]models.Product, 0)
+	var products []models.Products
+	products = make([]models.Products, 0)
 
-	if u.DB.Where("id = ?", repository.Idx(id)).Limit(1).Find(&products).Error != nil {
+	if p.DB.Where("id = ?", repository.Idx(id)).Limit(1).Find(&products).Error != nil {
 
 		return nil, errors.New("unable to search product")
 	}
@@ -115,14 +120,40 @@ func (u *ProductRepository) SearchFastById(id uuid.UUID) (*models.Product, error
 	return nil, nil
 }
 
-func (u *ProductRepository) CreateFast(name string, description string, price decimal.Decimal, stocks int) (*models.Product, error) {
+func (p *ProductRepository) SearchUnscopedFastById(id uuid.UUID) (*models.Products, error) {
 
-	if check, _ := u.SearchFast(name); check != nil {
+	p.NewSession()
+
+	if repository.EmptyIdx(id) {
+
+		return nil, errors.New("id is empty")
+	}
+
+	var products []models.Products
+	products = make([]models.Products, 0)
+
+	// find all products
+	if p.DB.Unscoped().Where("id = ?", repository.Idx(id)).Limit(1).Find(&products).Error != nil {
+
+		return nil, errors.New("unable to search product")
+	}
+
+	if len(products) > 0 {
+
+		return &products[0], nil
+	}
+
+	return nil, nil
+}
+
+func (p *ProductRepository) CreateFast(name string, description string, price decimal.Decimal, stocks int) (*models.Products, error) {
+
+	if check, _ := p.SearchFast(name); check != nil {
 
 		return nil, errors.New("product has been added")
 	}
 
-	product := &models.Product{
+	product := &models.Products{
 		ID:          repository.Idx(uuid.New()),
 		Name:        name,
 		Description: description,
@@ -130,7 +161,7 @@ func (u *ProductRepository) CreateFast(name string, description string, price de
 		Stocks:      stocks,
 	}
 
-	if u.DB.Create(&product).Error != nil {
+	if p.DB.Create(&product).Error != nil {
 
 		return product, errors.New("unable to create product")
 	}
@@ -138,7 +169,7 @@ func (u *ProductRepository) CreateFast(name string, description string, price de
 	return product, nil
 }
 
-func (u *ProductRepository) Update(id uuid.UUID, product *models.Product) error {
+func (p *ProductRepository) Update(id uuid.UUID, product *models.Products) error {
 
 	if repository.EmptyIdx(id) {
 
@@ -148,9 +179,9 @@ func (u *ProductRepository) Update(id uuid.UUID, product *models.Product) error 
 	// merge Id
 	product.ID = repository.Idx(id)
 
-	if check, _ := u.SearchFastById(id); check != nil {
+	if check, _ := p.SearchFastById(id); check != nil {
 
-		if u.DB.Where("id = ?", product.ID).Updates(product).Error != nil {
+		if p.DB.Where("id = ?", product.ID).Updates(product).Error != nil {
 
 			return errors.New("unable to update product")
 		}
@@ -159,7 +190,7 @@ func (u *ProductRepository) Update(id uuid.UUID, product *models.Product) error 
 	return nil
 }
 
-func (u *ProductRepository) DeleteFast(id uuid.UUID) error {
+func (p *ProductRepository) DeleteFast(id uuid.UUID) error {
 
 	if repository.EmptyIdx(id) {
 
@@ -169,9 +200,9 @@ func (u *ProductRepository) DeleteFast(id uuid.UUID) error {
 	// merge Id
 	ids := repository.Idx(id)
 
-	if check, _ := u.SearchFastById(id); check != nil {
+	if check, _ := p.SearchFastById(id); check != nil {
 
-		if u.DB.Where("id = ?", ids).Delete(&models.Product{}).Error != nil {
+		if p.DB.Where("id = ?", ids).Delete(&models.Products{}).Error != nil {
 
 			return errors.New("unable to update product")
 		}
@@ -180,7 +211,7 @@ func (u *ProductRepository) DeleteFast(id uuid.UUID) error {
 	return nil
 }
 
-func (u *ProductRepository) NewSession() {
+func (p *ProductRepository) NewSession() {
 
-	u.DB = u.DB.Session(&gorm.Session{})
+	p.DB = p.DB.Session(&gorm.Session{})
 }

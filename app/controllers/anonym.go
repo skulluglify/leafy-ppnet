@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"leafy/app/repository"
+	"leafy/app/util"
 	"net/http"
 	"skfw/papaya"
 	"skfw/papaya/bunny/swag"
@@ -27,10 +28,12 @@ func AnonymController(pn papaya.NetImpl, router swag.SwagRouterImpl) error {
 		"responses": swag.OkJSON([]m.KMapImpl{}),
 	}, func(ctx *swag.SwagContext) error {
 
+		//////////////////////////////////////
+
 		kReq, _ := ctx.Kornet()
 
-		page := ValueToInt(kReq.Query.Get("page"))
-		size := ValueToInt(kReq.Query.Get("size"))
+		page := util.ValueToInt(kReq.Query.Get("page"))
+		size := util.ValueToInt(kReq.Query.Get("size"))
 
 		var offset int
 
@@ -38,7 +41,9 @@ func AnonymController(pn papaya.NetImpl, router swag.SwagRouterImpl) error {
 
 			offset = page*size - size
 
-			products, err := productRepo.CatchAllProducts(offset, size)
+			//////////////////////////////////////
+
+			products, err := productRepo.CatchAll(offset, size)
 
 			if err != nil {
 
