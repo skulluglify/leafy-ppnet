@@ -24,6 +24,45 @@ func AdminController(pn papaya.NetImpl, router swag.SwagRouterImpl) error {
 
 	catchAllTransactions := util.TemplateCatchAllTransactions(pn)
 
+	router.Post("/topup", &m.KMap{
+		"AuthToken": true,
+		"Admin":     true,
+		"request": &m.KMap{
+			"params": &m.KMap{
+				"userId": "string",
+			},
+			"body": swag.JSON(&m.KMap{
+				"balance": "number",
+			}),
+		},
+		"responses": swag.OkJSON(&kornet.Message{}),
+	}, func(ctx *swag.SwagContext) error {
+
+		var err error
+
+		kReq, _ := ctx.Kornet()
+
+		data := m.KMap{}
+
+		if err = json.Unmarshal(kReq.Body.ReadAll(), &data); err != nil {
+
+			return ctx.Status(http.StatusInternalServerError).JSON(kornet.MessageNew("unable to parse json", true))
+		}
+
+		balance := decimal.NewFromInt(int64(util.ValueToInt(data.Get("balance"))))
+
+		userId := m.KValueToString(kReq.Query.Get("userId"))
+
+		userIdx := repo.Ids(userId)
+
+		if err = userRepo.Topup(userIdx, balance); err != nil {
+
+			return ctx.Status(http.StatusInternalServerError).JSON(kornet.MessageNew(err.Error(), true))
+		}
+
+		return ctx.Status(http.StatusOK).JSON(kornet.MessageNew("successful topup user balance", false))
+	})
+
 	router.Get("/sessions", &m.KMap{
 		"AuthToken":   true,
 		"Admin":       true,

@@ -1,7 +1,6 @@
 package repository
 
 import (
-	"database/sql"
 	"errors"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -10,9 +9,11 @@ import (
 )
 
 type TransactionRepository struct {
-	DB          *gorm.DB
-	cartRepo    CartRepositoryImpl
-	productRepo ProductRepositoryImpl
+	DB           *gorm.DB
+	modelCart    *gorm.DB
+	modelProduct *gorm.DB
+	cartRepo     CartRepositoryImpl
+	productRepo  ProductRepositoryImpl
 }
 
 type TransactionRepositoryImpl interface {
@@ -23,7 +24,9 @@ type TransactionRepositoryImpl interface {
 	SearchFast(cartId uuid.UUID) (*models.Transactions, error)
 	SafeSearchFast(userId uuid.UUID, cartId uuid.UUID) (*models.Transactions, error)
 
-	CreateFast(userId uuid.UUID, cartId uuid.UUID, method string) (*models.Transactions, error)
+	CreateFast(userId uuid.UUID, method string) (*models.Transactions, error)
+
+	Verify(transaction *models.Transactions) error
 
 	NewSession()
 }
@@ -45,6 +48,8 @@ func (t *TransactionRepository) Init(DB *gorm.DB) error {
 	if DB != nil {
 
 		t.DB = DB.Model(&models.Transactions{})
+		t.modelCart = DB.Model(&models.Cart{})
+		t.modelProduct = DB.Model(&models.Products{})
 		if t.cartRepo, err = CartRepositoryNew(DB); err != nil {
 
 			return err
@@ -73,7 +78,7 @@ func (t *TransactionRepository) CatchAll(userId uuid.UUID, offset int, size int)
 
 	var transactions []models.Transactions
 
-	if t.DB.Preload("Carts").Where("user_id = ?", userIds).Offset(offset).Limit(size).Order("created_at DESC").Find(&transactions).Error != nil {
+	if t.DB.Unscoped().Preload("Carts").Where("user_id = ?", userIds).Offset(offset).Limit(size).Order("created_at DESC").Find(&transactions).Error != nil {
 
 		return transactions, errors.New("unable to find transactions")
 	}
@@ -166,31 +171,39 @@ func (t *TransactionRepository) SafeSearchFast(userId uuid.UUID, cartId uuid.UUI
 	return nil, err
 }
 
-func (t *TransactionRepository) CreateFast(userId uuid.UUID, cartId uuid.UUID, method string) (*models.Transactions, error) {
+func (t *TransactionRepository) CreateFast(userId uuid.UUID, method string) (*models.Transactions, error) {
 
 	var err error
 
-	if repository.EmptyIdx(userId) || repository.EmptyIdx(cartId) {
+	if repository.EmptyIdx(userId) {
 
-		return nil, errors.New("userId or cartId is invalid id")
+		return nil, errors.New("invalid userId")
 	}
 
-	var check *models.Transactions
-	if check, err = t.SafeSearchFast(userId, cartId); check != nil {
+	userIds := repository.Idx(userId)
 
-		// if cart not invisible, but registered on transaction
-		return nil, errors.New("transaction has been added")
+	// update cart session
+	t.modelCart = t.modelCart.Session(&gorm.Session{})
+
+	// the cart is empty
+
+	var count int64
+
+	prepared := t.modelCart.
+		Where("carts.user_id = ? AND carts.transaction_id IS NULL", userIds).
+		Count(&count)
+
+	if err = prepared.Error; err != nil {
+
+		return nil, errors.New("unable to get cart information")
 	}
 
-	// transaction makes cart invisible to find it > cart is empty
-	if err.Error() == "cart is empty" {
+	if count == 0 {
 
-		return nil, err
+		return nil, errors.New("cart is empty")
 	}
 
 	id := repository.Idx(uuid.New())
-
-	userIds := repository.Idx(userId)
 
 	var transaction models.Transactions
 	transaction = models.Transactions{
@@ -199,51 +212,93 @@ func (t *TransactionRepository) CreateFast(userId uuid.UUID, cartId uuid.UUID, m
 		PaymentMethod: method,
 	}
 
-	var cart *models.Cart
+	prepared = t.DB.Create(&transaction)
 
-	if cart, err = t.cartRepo.SafeSearchFastById(cartId, userId); cart != nil {
+	if err = prepared.Error; err != nil {
 
-		productId := repository.Ids(cart.ProductID)
-
-		// search product
-		if product, _ := t.productRepo.SearchFastById(productId); product != nil {
-
-			if product.Stocks < cart.Qty {
-
-				return nil, errors.New("quantity out of stocks")
-			}
-
-			// desc product stocks
-			product.Stocks += -cart.Qty
-
-			// update product
-			if err = t.productRepo.Update(productId, product); err != nil {
-
-				return nil, err
-			}
-
-			// create transaction
-			if t.DB.Create(&transaction).Error != nil {
-
-				return nil, errors.New("unable to create transaction")
-			}
-
-			// merge
-			cart.TransactionID = sql.NullString{String: id, Valid: true}
-
-			// update cart
-			if err = t.cartRepo.Update(cart); err != nil {
-
-				return nil, err
-			}
-
-			return &transaction, nil
-		}
-
-		return nil, errors.New("unable to get product information")
+		return nil, errors.New("unable to create transaction")
 	}
 
-	return nil, err
+	t.modelProduct = t.modelProduct.Session(&gorm.Session{})
+
+	// update product stocks
+	// get all cart id
+
+	type Carts []struct {
+		ProductID string
+		Qty       int64
+	}
+
+	var carts Carts
+	carts = make(Carts, 0)
+
+	prepared = t.modelCart.Select("product_id, qty").Where("user_id = ? AND transaction_id IS NULL", userIds).
+		Scan(&carts)
+
+	if err = prepared.Error; err != nil {
+
+		return nil, errors.New("unable to catch all carts information")
+	}
+
+	for _, cart := range carts {
+
+		// update stocks product
+		prepared = t.modelProduct.Exec("UPDATE products SET stocks = stocks - ? WHERE id = ?", cart.Qty, cart.ProductID)
+		if err = prepared.Error; err != nil {
+
+			return nil, errors.New("unable to update product stocks")
+		}
+	}
+
+	// update cart
+	prepared = t.modelCart.Where("carts.user_id = ? AND carts.transaction_id IS NULL AND carts.deleted_at IS NULL", userIds).
+		Updates(map[string]any{
+			"transaction_id": id,
+		})
+
+	if err = prepared.Error; err != nil {
+
+		return nil, errors.New("unable to update cart")
+	}
+
+	// update cart session
+	t.modelCart = t.modelCart.Session(&gorm.Session{})
+
+	// delete cart
+	prepared = t.modelCart.Where("carts.user_id = ?", userIds).
+		Delete(&models.Cart{})
+
+	if err = prepared.Error; err != nil {
+
+		return nil, errors.New("unable to delete cart")
+	}
+
+	return &transaction, err
+}
+
+func (t *TransactionRepository) Verify(transaction *models.Transactions) error {
+
+	t.NewSession()
+
+	var err error
+
+	if repository.EmptyIds(transaction.ID) {
+
+		return errors.New("invalid userId")
+	}
+
+	prepared := t.DB.
+		Where("id = ? ", transaction.ID).
+		Updates(map[string]any{
+			"verify": true,
+		})
+
+	if err = prepared.Error; err != nil {
+
+		return errors.New("unable to verify transaction, please contact admin")
+	}
+
+	return nil
 }
 
 func (t *TransactionRepository) NewSession() {

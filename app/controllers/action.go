@@ -3,6 +3,7 @@ package controllers
 import (
 	"encoding/json"
 	"github.com/google/uuid"
+	"github.com/shopspring/decimal"
 	"leafy/app/models"
 	"leafy/app/repository"
 	"leafy/app/util"
@@ -31,6 +32,7 @@ func ActionController(pn papaya.NetImpl, router swag.SwagRouterImpl) error {
 		"description": "User Info",
 		"request":     &m.KMap{},
 		"responses": swag.OkJSON(&m.KMap{
+			"id":           "string",
 			"name":         "string",
 			"username":     "string",
 			"email":        "string",
@@ -43,14 +45,27 @@ func ActionController(pn papaya.NetImpl, router swag.SwagRouterImpl) error {
 			"postal_code":  "string",
 			"admin":        "boolean",
 			"verify":       "boolean",
+			"balance":      "number",
 		}),
 	}, func(ctx *swag.SwagContext) error {
+
+		var err error
 
 		if ctx.Event() {
 
 			if user, ok := ctx.Target().(*mo.UserModel); ok {
 
+				var balance decimal.Decimal
+
+				idx := repo.Ids(user.ID)
+
+				if balance, err = userRepo.Balance(idx); err != nil {
+
+					return ctx.Status(http.StatusInternalServerError).JSON(kornet.MessageNew(err.Error(), true))
+				}
+
 				return ctx.Status(http.StatusOK).JSON(&m.KMap{
+					"id":           user.ID,
 					"name":         user.Name,
 					"username":     user.Username,
 					"email":        user.Email,
@@ -63,6 +78,7 @@ func ActionController(pn papaya.NetImpl, router swag.SwagRouterImpl) error {
 					"postal_code":  user.PostalCode,
 					"admin":        user.Admin,
 					"verify":       user.Verify,
+					"balance":      balance,
 				})
 			}
 		}
@@ -437,9 +453,8 @@ func ActionController(pn papaya.NetImpl, router swag.SwagRouterImpl) error {
 							carts = append(carts, &m.KMap{
 								"id": cart.ID,
 								"product": &m.KMap{
-									"id":     product.ID,
-									"name":   product.Name,
-									"stocks": product.Stocks,
+									"id":   product.ID,
+									"name": product.Name,
 								},
 								"qty": cart.Qty,
 							})
@@ -449,6 +464,7 @@ func ActionController(pn papaya.NetImpl, router swag.SwagRouterImpl) error {
 							"id":             transaction.ID,
 							"carts":          carts,
 							"payment_method": transaction.PaymentMethod,
+							"verify":         transaction.Verify,
 						})
 					}
 
@@ -466,15 +482,14 @@ func ActionController(pn papaya.NetImpl, router swag.SwagRouterImpl) error {
 		"AuthToken":   true,
 		"description": "Create New Transaction",
 		"request": &m.KMap{
-			"params": &m.KMap{
-				"cartId": "string",
-			},
 			"body": swag.JSON(&m.KMap{
 				"payment_method": "string",
 			}),
 		},
 		"responses": swag.OkJSON(&kornet.Message{}),
 	}, func(ctx *swag.SwagContext) error {
+
+		var err error
 
 		if ctx.Event() {
 
@@ -484,24 +499,28 @@ func ActionController(pn papaya.NetImpl, router swag.SwagRouterImpl) error {
 
 				data := &m.KMap{}
 
-				if err := json.Unmarshal(kReq.Body.ReadAll(), data); err != nil {
+				if err = json.Unmarshal(kReq.Body.ReadAll(), data); err != nil {
 
 					return ctx.Status(http.StatusInternalServerError).JSON(kornet.MessageNew("unable to parse json", true))
 				}
 
-				cartId := m.KValueToString(kReq.Query.Get("cartId"))
 				paymentMethod := m.KValueToString(data.Get("payment_method"))
-
-				cartIdx := repo.Ids(cartId)
-
-				if check, _ := transactionRepo.SearchFast(cartIdx); check != nil {
-
-					return ctx.Status(http.StatusBadRequest).JSON(kornet.MessageNew("transaction has been added", true))
-				}
 
 				userIdx := repo.Ids(user.ID)
 
-				if _, err := transactionRepo.CreateFast(userIdx, cartIdx, paymentMethod); err != nil {
+				if err = userRepo.PayCheck(userIdx); err != nil {
+
+					return ctx.Status(http.StatusBadRequest).JSON(kornet.MessageNew(err.Error(), true))
+				}
+
+				var transaction *models.Transactions
+
+				if transaction, err = transactionRepo.CreateFast(userIdx, paymentMethod); err != nil {
+
+					return ctx.Status(http.StatusInternalServerError).JSON(kornet.MessageNew(err.Error(), true))
+				}
+
+				if err = transactionRepo.Verify(transaction); err != nil {
 
 					return ctx.Status(http.StatusInternalServerError).JSON(kornet.MessageNew(err.Error(), true))
 				}
@@ -511,6 +530,35 @@ func ActionController(pn papaya.NetImpl, router swag.SwagRouterImpl) error {
 		}
 
 		return ctx.Status(http.StatusInternalServerError).JSON(kornet.MessageNew("unable to get user information", true))
+	})
+
+	router.Get("/bill", &m.KMap{
+		"AuthToken":   true,
+		"description": "Show BIll",
+		"responses":   swag.OkJSON([]m.KMapImpl{}),
+	}, func(ctx *swag.SwagContext) error {
+
+		var err error
+		var bill decimal.Decimal
+
+		if ctx.Event() {
+
+			if user, ok := ctx.Target().(*mo.UserModel); ok {
+
+				idx := repo.Ids(user.ID)
+
+				if bill, err = userRepo.Bill(idx); err != nil {
+
+					return ctx.Status(http.StatusInternalServerError).JSON(kornet.MessageNew(err.Error(), true))
+				}
+
+				return ctx.Status(http.StatusOK).JSON(&m.KMap{
+					"pay": bill.BigInt(),
+				})
+			}
+		}
+
+		return nil
 	})
 
 	return nil
