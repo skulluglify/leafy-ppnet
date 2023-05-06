@@ -4,28 +4,17 @@ FROM golang:alpine AS builder
 WORKDIR /app
 
 ENV CGO_ENABLED 0
-ENV GOPATH /go
-ENV GOCACHE /go-build
+ENV DOCKERIZED 1
 
-# caches requirement for runtime/ppnet
-COPY src/skfw/go.mod .
-RUN --mount=type=cache,target=/go/pkg/mod/cache \
-    go mod download
-
-# caches requirement for app
-COPY app .
-COPY pkg .
-COPY go.mod .
-COPY go.work .
-COPY .env .
-COPY Makefile .
-RUN --mount=type=cache,target=/go/pkg/mod/cache \
-    --mount=type=cache,target=/go-build \
-    go build -o bin/backend main.go
+COPY . .
+COPY .env.docker /
+RUN go build -o bin/backend main.go
 
 CMD ["/app/bin/backend"]
 
 FROM scratch
+
+ENV DOCKERIZED 1
 
 COPY --from=builder /app/bin/backend /usr/local/bin/backend
 

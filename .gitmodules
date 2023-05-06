@@ -1,3 +1,3 @@
-[submodule "go/pkg/skfw"]
-	path = go/pkg/skfw
+[submodule "pkg/skfw"]
+	path = pkg/skfw
 	url = https://github.com/skulluglify/papayanet
