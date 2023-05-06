@@ -21,6 +21,9 @@ jobs:
       with:
         go-version: 1.19
 
+    - name: Clone PapayaNet
+      run: git clone https://github.com/skulluglify/papayanet pkg/skfw
+
     - name: Build
       run: go build -v ./...
 
