@@ -5,7 +5,7 @@ update:
 	git submodule update --init --recursive
 	git submodule update --recursive --remote
 
-build:
+build: update
 	mkdir -p build/bin
 	env CGO_ENABLED=0 go build -o build/bin/app.exe main.go
 
