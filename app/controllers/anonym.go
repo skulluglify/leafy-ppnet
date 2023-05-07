@@ -16,6 +16,7 @@ func AnonymController(pn papaya.NetImpl, router swag.SwagRouterImpl) error {
 	gorm := conn.GORM()
 
 	productRepo, _ := repository.ProductRepositoryNew(gorm)
+	categoryRepo, _ := repository.CategoryRepositoryNew(gorm)
 
 	router.Get("/products", &m.KMap{
 		"description": "Catch All Products",
@@ -50,21 +51,7 @@ func AnonymController(pn papaya.NetImpl, router swag.SwagRouterImpl) error {
 				return ctx.Status(http.StatusInternalServerError).JSON(kornet.MessageNew(err.Error(), true))
 			}
 
-			var data []m.KMapImpl
-			data = make([]m.KMapImpl, 0)
-
-			for _, product := range products {
-
-				data = append(data, &m.KMap{
-					"id":          product.ID,
-					"name":        product.Name,
-					"description": product.Description,
-					"price":       product.Price,
-					"stocks":      product.Stocks,
-				})
-			}
-
-			return ctx.Status(http.StatusOK).JSON(data)
+			return ctx.Status(http.StatusOK).JSON(categoryRepo.CatchAll(products))
 		}
 
 		return ctx.Status(http.StatusBadRequest).JSON(kornet.MessageNew("page is zero", true))

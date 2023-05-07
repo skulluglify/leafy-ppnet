@@ -243,6 +243,109 @@ ALTER TABLE ONLY public.nutrients ALTER COLUMN id SET DEFAULT nextval('public.nu
 
 
 --
+-- Data for Name: carts; Type: TABLE DATA; Schema: public; Owner: user
+--
+
+COPY public.carts (id, created_at, updated_at, deleted_at, user_id, transaction_id, product_id, qty) FROM stdin;
+a19a65c0ffe2442a950601189f9e0a6b	2023-05-07 12:30:52.602404+07	2023-05-07 12:30:52.640008+07	2023-05-07 12:30:52.641782+07	6d02e33a79a04a9ead9b2faf707cef2a	f964a8819563479fb4a9ea1a38589d1c	b119a103f10c408cb13ce35ca4141459	12
+fb6ef2c522384b5e8b152dff3134fb21	2023-05-07 12:30:52.607551+07	2023-05-07 12:30:52.640008+07	2023-05-07 12:30:52.641782+07	6d02e33a79a04a9ead9b2faf707cef2a	f964a8819563479fb4a9ea1a38589d1c	543d71b22cff46b68d0a5515d7909fc8	12
+d9ea4b2a2a9447b7bba98d79f630696d	2023-05-07 12:30:52.612512+07	2023-05-07 12:30:52.640008+07	2023-05-07 12:30:52.641782+07	6d02e33a79a04a9ead9b2faf707cef2a	f964a8819563479fb4a9ea1a38589d1c	6f064ad3a99f48e88a58805718f2fc91	3
+\.
+
+
+--
+-- Data for Name: categories; Type: TABLE DATA; Schema: public; Owner: user
+--
+
+COPY public.categories (id, created_at, updated_at, deleted_at, product_id, category_id) FROM stdin;
+36	2023-05-07 12:30:52.563714+07	2023-05-07 12:30:52.563714+07	\N	6f064ad3a99f48e88a58805718f2fc91	e67a76cf339744d694fac64bdc421b8a
+37	2023-05-07 12:30:52.567062+07	2023-05-07 12:30:52.567062+07	\N	6f064ad3a99f48e88a58805718f2fc91	b58c9170db5647a18daae18724fba7a6
+38	2023-05-07 12:30:52.573914+07	2023-05-07 12:30:52.573914+07	\N	543d71b22cff46b68d0a5515d7909fc8	c162241ff2f048a0b919d6ae6c3ffb98
+39	2023-05-07 12:30:52.575773+07	2023-05-07 12:30:52.575773+07	\N	543d71b22cff46b68d0a5515d7909fc8	b58c9170db5647a18daae18724fba7a6
+40	2023-05-07 12:30:52.582873+07	2023-05-07 12:30:52.582873+07	\N	b119a103f10c408cb13ce35ca4141459	1390cf02d00a49fe9f51cdaac3464e06
+41	2023-05-07 12:30:52.584683+07	2023-05-07 12:30:52.584683+07	\N	b119a103f10c408cb13ce35ca4141459	b58c9170db5647a18daae18724fba7a6
+42	2023-05-07 12:30:52.592611+07	2023-05-07 12:30:52.592611+07	\N	3d6ed7e8019b44b0ae50135691b7ba96	a143baf91bd849aabbbda0fac3790ebc
+43	2023-05-07 12:30:52.594497+07	2023-05-07 12:30:52.594497+07	\N	3d6ed7e8019b44b0ae50135691b7ba96	b58c9170db5647a18daae18724fba7a6
+\.
+
+
+--
+-- Data for Name: category; Type: TABLE DATA; Schema: public; Owner: user
+--
+
+COPY public.category (id, created_at, updated_at, deleted_at, name, description) FROM stdin;
+e67a76cf339744d694fac64bdc421b8a	2023-05-07 12:30:52.561957+07	2023-05-07 12:30:52.561957+07	\N	pineapple	
+b58c9170db5647a18daae18724fba7a6	2023-05-07 12:30:52.565571+07	2023-05-07 12:30:52.565571+07	\N	raw	
+c162241ff2f048a0b919d6ae6c3ffb98	2023-05-07 12:30:52.572623+07	2023-05-07 12:30:52.572623+07	\N	apple	
+1390cf02d00a49fe9f51cdaac3464e06	2023-05-07 12:30:52.581354+07	2023-05-07 12:30:52.581354+07	\N	papaya	
+a143baf91bd849aabbbda0fac3790ebc	2023-05-07 12:30:52.591074+07	2023-05-07 12:30:52.591074+07	\N	orange	
+\.
+
+
+--
+-- Data for Name: nutrients; Type: TABLE DATA; Schema: public; Owner: user
+--
+
+COPY public.nutrients (id, created_at, updated_at, deleted_at, product_id, name, value) FROM stdin;
+\.
+
+
+--
+-- Data for Name: products; Type: TABLE DATA; Schema: public; Owner: user
+--
+
+COPY public.products (id, created_at, updated_at, deleted_at, name, image, description, stocks, price) FROM stdin;
+3d6ed7e8019b44b0ae50135691b7ba96	2023-05-07 12:30:52.589254+07	2023-05-07 12:30:52.589254+07	\N	Orange		An orange is a fruit of various citrus species in the family Rutaceae (see list of plants known as orange); it primarily refers to Citrus × sinensis,[1] which is also called sweet orange, to distinguish it from the related Citrus × aurantium, referred to as bitter orange.	120	6
+b119a103f10c408cb13ce35ca4141459	2023-05-07 12:30:52.579606+07	2023-05-07 12:30:52.579606+07	\N	Papaya		The papaya, papaw, or pawpaw is the plant species Carica papaya, one of the 21 accepted species in the genus Carica of the family Caricaceae.	52	23
+543d71b22cff46b68d0a5515d7909fc8	2023-05-07 12:30:52.571084+07	2023-05-07 12:30:52.571084+07	\N	Apple		An edible fruit produced by an apple tree (Malus Domestica).	228	6
+6f064ad3a99f48e88a58805718f2fc91	2023-05-07 12:30:52.559721+07	2023-05-07 12:30:52.559721+07	\N	Pineapple		A tropical plant with an edible fruit and the most economically significant plant in the family Bromeliaceae.	125	12
+\.
+
+
+--
+-- Data for Name: sessions; Type: TABLE DATA; Schema: public; Owner: user
+--
+
+COPY public.sessions (id, created_at, updated_at, deleted_at, user_id, client_ip, user_agent, token, secret_key, expired, last_activated) FROM stdin;
+ae2cc72c915743c1a67753203ff37f03	2023-05-07 12:30:52.499312+07	2023-05-07 12:30:52.646038+07	\N	6d02e33a79a04a9ead9b2faf707cef2a	127.0.0.1	Go-http-client/1.1	eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhZG1pbiI6dHJ1ZSwiZW1haWwiOiJ1c2VyQG1haWwuY28iLCJleHAiOjE2ODM0NTE4NTIsImlhdCI6MTY4MzQzNzQ1MiwidXNlcm5hbWUiOiJ1c2VyIn0.AUT0BZbRrUPFDAHxlrzDJE0g_eMzvY3-VcToZ6x2fwY	GkHsb1t-7vXI6m0wwptxgZry4nkC9EgoCJ4cm81PiUM=	2023-05-07 09:30:52.446855	2023-05-07 05:30:52.645938
+d69e962635584db2af30f634d65aad96	2023-05-07 12:30:52.553863+07	2023-05-07 12:30:52.58731+07	\N	a4dd3bab9fd84cf188e6c4093698690f	127.0.0.1	Go-http-client/1.1	eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhZG1pbiI6dHJ1ZSwiZW1haWwiOiJhZG1pbkBtYWlsLmNvIiwiZXhwIjoxNjgzNDUxODUyLCJpYXQiOjE2ODM0Mzc0NTIsInVzZXJuYW1lIjoiYWRtaW4ifQ.iD-yghUhM0jfXcofSQuxq1fGE2P8aW9zDIaiQ9EDYvo	I6kTs8knQQWQVRSbxb1ubo-o6pvdOPVqWhMbp-kbsvg=	2023-05-07 09:30:52.502988	2023-05-07 05:30:52.587211
+\.
+
+
+--
+-- Data for Name: transactions; Type: TABLE DATA; Schema: public; Owner: user
+--
+
+COPY public.transactions (id, created_at, updated_at, deleted_at, user_id, payment_method, verify) FROM stdin;
+f964a8819563479fb4a9ea1a38589d1c	2023-05-07 12:30:52.63254+07	2023-05-07 12:30:52.643456+07	\N	6d02e33a79a04a9ead9b2faf707cef2a	visa-credit-card	t
+\.
+
+
+--
+-- Data for Name: users; Type: TABLE DATA; Schema: public; Owner: user
+--
+
+COPY public.users (id, created_at, updated_at, deleted_at, name, username, email, password, gender, phone, dob, address, country_code, city, postal_code, admin, verify, balance) FROM stdin;
+a4dd3bab9fd84cf188e6c4093698690f	\N	\N	\N	\N	admin	admin@mail.co	$2a$10$dMF8Q6vCvgxynyttdS.lY./5rSW9tBs4DHJmqG8uXBP8i4miH.RRG	\N	\N	\N	\N	\N	\N	\N	t	f	0
+6d02e33a79a04a9ead9b2faf707cef2a	\N	2023-05-07 12:30:52.630164+07	\N	\N	user	user@mail.co	$2a$10$dMF8Q6vCvgxynyttdS.lY./5rSW9tBs4DHJmqG8uXBP8i4miH.RRG	\N	\N	\N	\N	\N	\N	\N	t	f	616
+\.
+
+
+--
+-- Name: categories_id_seq; Type: SEQUENCE SET; Schema: public; Owner: user
+--
+
+SELECT pg_catalog.setval('public.categories_id_seq', 43, true);
+
+
+--
+-- Name: nutrients_id_seq; Type: SEQUENCE SET; Schema: public; Owner: user
+--
+
+SELECT pg_catalog.setval('public.nutrients_id_seq', 1, false);
+
+
+--
 -- Name: carts carts_pkey; Type: CONSTRAINT; Schema: public; Owner: user
 --
 

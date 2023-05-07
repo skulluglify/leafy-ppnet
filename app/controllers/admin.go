@@ -3,6 +3,7 @@ package controllers
 import (
 	"encoding/json"
 	"github.com/shopspring/decimal"
+	"leafy/app/models"
 	"leafy/app/repository"
 	"leafy/app/util"
 	"net/http"
@@ -21,12 +22,14 @@ func AdminController(pn papaya.NetImpl, router swag.SwagRouterImpl) error {
 
 	userRepo, _ := repository.UserRepositoryNew(gorm)
 	productRepo, _ := repository.ProductRepositoryNew(gorm)
+	categoryRepo, _ := repository.CategoryRepositoryNew(gorm)
 
 	catchAllTransactions := util.TemplateCatchAllTransactions(pn)
 
 	router.Post("/topup", &m.KMap{
-		"AuthToken": true,
-		"Admin":     true,
+		"AuthToken":   true,
+		"Admin":       true,
+		"description": "Topup Money",
 		"request": &m.KMap{
 			"params": &m.KMap{
 				"userId": "string",
@@ -142,16 +145,19 @@ func AdminController(pn papaya.NetImpl, router swag.SwagRouterImpl) error {
 				"description": "string",
 				"price":       "number",
 				"stocks":      "number",
+				"categories":  []string{},
 			}),
 		},
 		"responses": swag.CreatedJSON(&kornet.Message{}),
 	}, func(ctx *swag.SwagContext) error {
 
+		var err error
+
 		kReq, _ := ctx.Kornet()
 
 		data := &m.KMap{}
 
-		if err := json.Unmarshal(kReq.Body.ReadAll(), data); err != nil {
+		if err = json.Unmarshal(kReq.Body.ReadAll(), data); err != nil {
 
 			return ctx.Status(http.StatusInternalServerError).JSON(kornet.MessageNew("unable to parse data", true))
 		}
@@ -160,13 +166,145 @@ func AdminController(pn papaya.NetImpl, router swag.SwagRouterImpl) error {
 		description := m.KValueToString(data.Get("description"))
 		price := decimal.NewFromFloat(m.KValueToFloat(data.Get("price")))
 		stocks := util.ValueToInt(data.Get("stocks"))
+		categories := util.ValueToArrayStr(data.Get("categories"))
 
-		if _, err := productRepo.CreateFast(name, description, price, stocks); err != nil {
+		var check *models.Products
+
+		if check, err = productRepo.CreateFast(name, description, price, stocks); err != nil {
 
 			return ctx.Status(http.StatusInternalServerError).JSON(kornet.MessageNew(err.Error(), true))
 		}
 
+		// add category
+		if check != nil {
+
+			for _, cate := range categories {
+
+				if err = categoryRepo.Add(repo.Ids(check.ID), cate); err != nil {
+
+					return ctx.Status(http.StatusInternalServerError).JSON(kornet.MessageNew(err.Error(), true))
+				}
+			}
+		}
+
 		return ctx.Status(http.StatusCreated).JSON(kornet.MessageNew("create new product", false))
+	})
+
+	router.Post("/category", &m.KMap{
+		"AuthToken":   true,
+		"Admin":       true,
+		"description": "Add Category",
+		"request": &m.KMap{
+			"params": &m.KMap{
+				"productId": "string",
+			},
+			"body": swag.JSON(&m.KMap{
+				"name": "string",
+			}),
+		},
+		"responses": swag.OkJSON(&kornet.Message{}),
+	}, func(ctx *swag.SwagContext) error {
+
+		var err error
+
+		kReq, _ := ctx.Kornet()
+
+		data := &m.KMap{}
+
+		if err = json.Unmarshal(kReq.Body.ReadAll(), data); err != nil {
+
+			return ctx.Status(http.StatusInternalServerError).JSON(kornet.MessageNew("unable to parse data", true))
+		}
+
+		productId := m.KValueToString(kReq.Query.Get("productId"))
+		name := m.KValueToString(data.Get("name"))
+		//description := m.KValueToString(data.Get("description"))
+
+		productIdx := repo.Ids(productId)
+
+		if check, _ := productRepo.SearchFastById(productIdx); check != nil {
+
+			// try to create a new category
+			//if _, err = categoryRepo.SearchFast(name); err != nil {
+			//
+			//	if _, err = categoryRepo.CreateFast(name, description); err != nil {
+			//
+			//		return ctx.Status(http.StatusInternalServerError).JSON(kornet.MessageNew(err.Error(), true))
+			//	}
+			//}
+
+			if err = categoryRepo.Add(productIdx, name); err != nil {
+
+				return ctx.Status(http.StatusInternalServerError).JSON(kornet.MessageNew(err.Error(), true))
+			}
+
+			return ctx.Status(http.StatusOK).JSON(kornet.MessageNew("link category", false))
+		}
+
+		return ctx.Status(http.StatusBadRequest).JSON(kornet.MessageNew("product not found", false))
+	})
+
+	router.Put("/category", &m.KMap{
+		"AuthToken":   true,
+		"Admin":       true,
+		"description": "Update Category",
+		"request": &m.KMap{
+			"params": &m.KMap{
+				"name": "string",
+			},
+			"body": swag.JSON(&m.KMap{
+				"name": "string",
+			}),
+		},
+		"responses": swag.OkJSON(&kornet.Message{}),
+	}, func(ctx *swag.SwagContext) error {
+
+		var err error
+
+		kReq, _ := ctx.Kornet()
+
+		data := &m.KMap{}
+
+		if err = json.Unmarshal(kReq.Body.ReadAll(), data); err != nil {
+
+			return ctx.Status(http.StatusInternalServerError).JSON(kornet.MessageNew("unable to parse data", true))
+		}
+
+		name := m.KValueToString(kReq.Query.Get("name"))
+		newName := m.KValueToString(data.Get("name"))
+
+		if err = categoryRepo.UpdateByName(name, newName); err != nil {
+
+			return ctx.Status(http.StatusInternalServerError).JSON(kornet.MessageNew(err.Error(), true))
+		}
+
+		return ctx.Status(http.StatusOK).JSON(kornet.MessageNew("update category", false))
+	})
+
+	router.Delete("/category", &m.KMap{
+		"AuthToken":   true,
+		"Admin":       true,
+		"description": "Delete Category",
+		"request": &m.KMap{
+			"params": &m.KMap{
+				"name": "string",
+			},
+		},
+		"responses": swag.OkJSON(&kornet.Message{}),
+	}, func(ctx *swag.SwagContext) error {
+
+		var err error
+
+		kReq, _ := ctx.Kornet()
+
+		name := m.KValueToString(kReq.Query.Get("name"))
+
+		if err = categoryRepo.DeleteByName(name); err != nil {
+
+			return ctx.Status(http.StatusInternalServerError).JSON(kornet.MessageNew(err.Error(), true))
+		}
+
+		return ctx.Status(http.StatusOK).JSON(kornet.MessageNew("delete category", false))
 	})
 
 	router.Put("/product", &m.KMap{
@@ -182,10 +320,13 @@ func AdminController(pn papaya.NetImpl, router swag.SwagRouterImpl) error {
 				"description": "string",
 				"price":       "number",
 				"stocks":      "number",
+				"categories":  []string{},
 			}),
 		},
 		"responses": swag.CreatedJSON(&kornet.Message{}),
 	}, func(ctx *swag.SwagContext) error {
+
+		var err error
 
 		kReq, _ := ctx.Kornet()
 
@@ -202,6 +343,7 @@ func AdminController(pn papaya.NetImpl, router swag.SwagRouterImpl) error {
 		description := m.KValueToString(data.Get("description"))
 		price := decimal.NewFromFloat(m.KValueToFloat(data.Get("price")))
 		stocks := util.ValueToInt(data.Get("stocks"))
+		categories := util.ValueToArrayStr(data.Get("categories"))
 
 		id := repo.Ids(ids)
 
@@ -217,6 +359,14 @@ func AdminController(pn papaya.NetImpl, router swag.SwagRouterImpl) error {
 				if productRepo.Update(id, product) != nil {
 
 					return ctx.Status(http.StatusInternalServerError).JSON(kornet.MessageNew("unable to update product", true))
+				}
+
+				for _, cate := range categories {
+
+					if err = categoryRepo.Add(repo.Ids(product.ID), cate); err != nil {
+
+						return ctx.Status(http.StatusInternalServerError).JSON(kornet.MessageNew(err.Error(), true))
+					}
 				}
 
 				return ctx.Status(http.StatusOK).JSON(kornet.MessageNew("update product", false))

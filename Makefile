@@ -28,6 +28,9 @@ clean:
 	docker image prune
 
 dump:
+	sudo -u postgres pg_dump --dbname leafy >postgresql.sql
+
+dump-schema:
 	sudo -u postgres pg_dump --dbname leafy --schema-only >postgresql.sql
 
 go-test:

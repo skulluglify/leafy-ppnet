@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"encoding/json"
 	"github.com/google/uuid"
-	"github.com/shopspring/decimal"
 	"io"
 	"leafy/app/models"
 	"net/http"
@@ -54,6 +53,9 @@ func TestMergeData(t *testing.T) {
 	carts := db.Model(&models.Cart{})
 	sessions := db.Model(&models.Sessions{})
 	products := db.Model(&models.Products{})
+	category := db.Model(&models.Category{})
+	categories := db.Model(&models.Categories{})
+	nutrients := db.Model(&models.Nutrients{})
 	transactions := db.Model(&models.Transactions{})
 
 	var prepared *sql.DB
@@ -66,6 +68,15 @@ func TestMergeData(t *testing.T) {
 
 	prepared, _ = products.DB()
 	prepared.Query("DELETE FROM products")
+
+	prepared, _ = category.DB()
+	prepared.Query("DELETE FROM category")
+
+	prepared, _ = categories.DB()
+	prepared.Query("DELETE FROM categories")
+
+	prepared, _ = nutrients.DB()
+	prepared.Query("DELETE FROM nutrients")
 
 	prepared, _ = carts.DB()
 	prepared.Query("DELETE FROM carts")
@@ -93,22 +104,6 @@ func TestMergeData(t *testing.T) {
 		"email":    "user@mail.co",
 		"password": pass,
 		"admin":    true,
-	})
-
-	products.Create(&models.Products{
-		ID:          repository.Idx(uuid.New()),
-		Name:        "Apple",
-		Description: "Red Apple",
-		Stocks:      100,
-		Price:       decimal.NewFromInt(12),
-	})
-
-	products.Create(&models.Products{
-		ID:          repository.Idx(uuid.New()),
-		Name:        "Papaya",
-		Description: "Papaya Mountain",
-		Stocks:      120,
-		Price:       decimal.NewFromInt(23),
 	})
 }
 
@@ -253,27 +248,6 @@ func ValueToInt(value any) int {
 	return 0
 }
 
-func TestProductCatchAll(t *testing.T) {
-
-	var err error
-	var res Maps
-
-	origin.Path = "/api/v1/products"
-	origin.RawQuery = "page=1&size=10"
-
-	if res, err = ReqAr(method.GET, origin, nil, nil); err != nil {
-
-		t.Error(err)
-	}
-
-	if len(res) == 0 {
-
-		t.Error("data is empty")
-	}
-
-	t.Log("data", res)
-}
-
 func TestLogin(t *testing.T) {
 
 	var err error
@@ -326,7 +300,7 @@ func TestAdminLogin(t *testing.T) {
 	t.Log("token_admin", tokenAdmin)
 }
 
-func TestAdminAddProduct(t *testing.T) {
+func TestAdminAddProduct1(t *testing.T) {
 
 	var err error
 	var res *Map
@@ -335,9 +309,10 @@ func TestAdminAddProduct(t *testing.T) {
 
 	if res, err = Req(method.POST, origin, Map{
 		"name":        "Pineapple",
-		"description": "Pineapple Yellow from jungle",
+		"description": "A tropical plant with an edible fruit and the most economically significant plant in the family Bromeliaceae.",
 		"price":       12,
 		"stocks":      128,
+		"categories":  []string{"pineapple", "raw"},
 	}, Token(tokenAdmin)); err != nil {
 
 		t.Error(err)
@@ -349,6 +324,105 @@ func TestAdminAddProduct(t *testing.T) {
 	}
 
 	t.Log("create product")
+}
+
+func TestAdminAddProduct2(t *testing.T) {
+
+	var err error
+	var res *Map
+
+	origin.Path = "/api/v1/admin/product"
+
+	if res, err = Req(method.POST, origin, Map{
+		"name":        "Apple",
+		"description": "An edible fruit produced by an apple tree (Malus Domestica).",
+		"price":       6,
+		"stocks":      240,
+		"categories":  []string{"apple", "raw"},
+	}, Token(tokenAdmin)); err != nil {
+
+		t.Error(err)
+	}
+
+	if check := m.KValueToBool(Mapping(*res).Get("error")); check {
+
+		t.Error("failed create product")
+	}
+
+	t.Log("create product")
+}
+
+func TestAdminAddProduct3(t *testing.T) {
+
+	var err error
+	var res *Map
+
+	origin.Path = "/api/v1/admin/product"
+
+	if res, err = Req(method.POST, origin, Map{
+		"name":        "Papaya",
+		"description": "The papaya, papaw, or pawpaw is the plant species Carica papaya, one of the 21 accepted species in the genus Carica of the family Caricaceae.",
+		"price":       23,
+		"stocks":      64,
+		"categories":  []string{"papaya", "raw"},
+	}, Token(tokenAdmin)); err != nil {
+
+		t.Error(err)
+	}
+
+	if check := m.KValueToBool(Mapping(*res).Get("error")); check {
+
+		t.Error("failed create product")
+	}
+
+	t.Log("create product")
+}
+
+func TestAdminAddProduct4(t *testing.T) {
+
+	var err error
+	var res *Map
+
+	origin.Path = "/api/v1/admin/product"
+
+	if res, err = Req(method.POST, origin, Map{
+		"name":        "Orange",
+		"description": "An orange is a fruit of various citrus species in the family Rutaceae (see list of plants known as orange); it primarily refers to Citrus × sinensis,[1] which is also called sweet orange, to distinguish it from the related Citrus × aurantium, referred to as bitter orange.",
+		"price":       6,
+		"stocks":      120,
+		"categories":  []string{"orange", "raw"},
+	}, Token(tokenAdmin)); err != nil {
+
+		t.Error(err)
+	}
+
+	if check := m.KValueToBool(Mapping(*res).Get("error")); check {
+
+		t.Error("failed create product")
+	}
+
+	t.Log("create product")
+}
+
+func TestProductCatchAll(t *testing.T) {
+
+	var err error
+	var res Maps
+
+	origin.Path = "/api/v1/products"
+	origin.RawQuery = "page=1&size=10"
+
+	if res, err = ReqAr(method.GET, origin, nil, nil); err != nil {
+
+		t.Error(err)
+	}
+
+	if len(res) == 0 {
+
+		t.Error("data is empty")
+	}
+
+	t.Log("data", res)
 }
 
 func TestProductCart(t *testing.T) {
@@ -463,7 +537,7 @@ func TestBill(t *testing.T) {
 
 	bill := ValueToInt(Mapping(*res).Get("pay"))
 
-	if bill != 456 {
+	if bill != 384 {
 
 		t.Error("bill incorrect value")
 	}
