@@ -6,6 +6,7 @@ import (
 	"gorm.io/gorm"
 	"leafy/app/models"
 	m "skfw/papaya/koala/mapping"
+	"skfw/papaya/koala/pp"
 	"skfw/papaya/pigeon/templates/basicAuth/repository"
 )
 
@@ -16,16 +17,15 @@ type CategoryRepository struct {
 
 type CategoryRepositoryImpl interface {
 	Init(DB *gorm.DB) error
-
 	SearchFast(name string) (*models.Category, error)
 	SearchFastById(id uuid.UUID) (*models.Category, error)
 	CreateFast(name string, description string) (*models.Category, error)
 	Add(productId uuid.UUID, name string) error
+	Categories(productId uuid.UUID) []string
 	CatchAll(products []models.Products) []m.KMapImpl
-
 	UpdateByName(name string, newName string) error
 	DeleteByName(name string) error
-
+	UnlinkByProductId(productId uuid.UUID) error
 	NewSession()
 }
 
@@ -260,7 +260,8 @@ func (c *CategoryRepository) CatchAll(products []models.Products) []m.KMapImpl {
 			"id":          product.ID,
 			"name":        product.Name,
 			"description": product.Description,
-			"price":       product.Price,
+			"image":       pp.Qany(product.Image, nil),
+			"price":       product.Price.BigInt(),
 			"stocks":      product.Stocks,
 			"categories":  cats,
 		}
@@ -307,20 +308,40 @@ func (c *CategoryRepository) DeleteByName(name string) error {
 	var check *models.Category
 	if check, _ = c.SearchFast(name); check != nil {
 
-		if err = c.Shadow.Where("category_id = ?", check.ID).Delete(&models.Categories{}).Error; err != nil {
+		if err = c.Shadow.Unscoped().Where("category_id = ?", check.ID).Delete(&models.Categories{}).Error; err != nil {
 
 			return errors.New("unable to unlink category")
 		}
 
-		if err = c.DB.Where("name = ?", name).Delete(&models.Category{}).Error; err != nil {
-
-			return errors.New("unable to delete category")
-		}
+		// unnecessary to delete the category from categories
+		//if err = c.DB.Where("name = ?", name).Delete(&models.Category{}).Error; err != nil {
+		//
+		//	return errors.New("unable to delete category")
+		//}
 
 		return nil
 	}
 
 	return errors.New("category not found")
+}
+
+func (c *CategoryRepository) UnlinkByProductId(productId uuid.UUID) error {
+
+	if repository.EmptyIdx(productId) {
+
+		return errors.New("invalid productId")
+	}
+
+	productIds := repository.Idx(productId)
+
+	var err error
+
+	if err = c.Shadow.Unscoped().Where("product_id = ?", productIds).Delete(&models.Categories{}).Error; err != nil {
+
+		return errors.New("unable to unlink category")
+	}
+
+	return nil
 }
 
 func (c *CategoryRepository) NewSession() {

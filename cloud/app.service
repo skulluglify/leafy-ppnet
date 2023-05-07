@@ -3,7 +3,7 @@ Description=Leafy API
 After=network.target nss-lookup.target
 
 [Service]
-ExecStart=/usr/bin/env DB_HOST=localhost DB_PORT=5432 DB_USERNAME=user DB_PASSWORD= DB_PASSWORD_FILE=/app/leafy/config/db/postgres/passwd.txt DB_NAME=main DB_CHARSET=utf8 DB_TIMEZONE=UTC DB_SECURE=false DB_UNIX_SOCK= /app/leafy/build/bin/app.exe
+ExecStart=/usr/bin/env DB_HOST=localhost DB_PORT=5432 DB_USERNAME=user DB_PASSWORD= DB_PASSWORD_FILE=/app/leafy/config/db/postgres/passwd.txt DB_NAME=main DB_CHARSET=utf8 DB_TIMEZONE=UTC DB_SECURE=false DB_UNIX_SOCK= NUTRIENT_API_KEY= /app/leafy/build/bin/app.exe
 Restart=on-failure
 
 [Install]

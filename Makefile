@@ -7,7 +7,8 @@ update:
 
 build: update
 	mkdir -p build/bin
-	env CGO_ENABLED=0 go build -o build/bin/app.exe main.go
+	env CGO_ENABLED=0 go build -o build/bin/app main.go
+	env CGO_ENABLED=0 go build -o build/bin/test test/main/main.go
 
 docker-compose-build:
 	sudo env DOCKER_BUILDKIT=1 docker-compose -f compose.yml -p leafy build

@@ -387,7 +387,7 @@ func TestAdminAddProduct4(t *testing.T) {
 
 	if res, err = Req(method.POST, origin, Map{
 		"name":        "Orange",
-		"description": "An orange is a fruit of various citrus species in the family Rutaceae (see list of plants known as orange); it primarily refers to Citrus × sinensis,[1] which is also called sweet orange, to distinguish it from the related Citrus × aurantium, referred to as bitter orange.",
+		"description": "An orange is a fruit of various citrus species in the family Rutaceae, it primarily refers to Citrus × sinensis, which is also called sweet orange.",
 		"price":       6,
 		"stocks":      120,
 		"categories":  []string{"orange", "raw"},

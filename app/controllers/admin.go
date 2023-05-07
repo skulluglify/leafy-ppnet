@@ -6,6 +6,8 @@ import (
 	"leafy/app/models"
 	"leafy/app/repository"
 	"leafy/app/util"
+	"mime"
+	"mime/multipart"
 	"net/http"
 	"skfw/papaya"
 	"skfw/papaya/bunny/swag"
@@ -23,8 +25,9 @@ func AdminController(pn papaya.NetImpl, router swag.SwagRouterImpl) error {
 	userRepo, _ := repository.UserRepositoryNew(gorm)
 	productRepo, _ := repository.ProductRepositoryNew(gorm)
 	categoryRepo, _ := repository.CategoryRepositoryNew(gorm)
+	nutrientRepo, _ := repository.NutrientRepositoryNew(gorm)
 
-	catchAllTransactions := util.TemplateCatchAllTransactions(pn)
+	catchAllTransactions := TemplateCatchAllTransactions(pn)
 
 	router.Post("/topup", &m.KMap{
 		"AuthToken":   true,
@@ -178,12 +181,19 @@ func AdminController(pn papaya.NetImpl, router swag.SwagRouterImpl) error {
 		// add category
 		if check != nil {
 
+			productId := repo.Ids(check.ID)
+
 			for _, cate := range categories {
 
-				if err = categoryRepo.Add(repo.Ids(check.ID), cate); err != nil {
+				if err = categoryRepo.Add(productId, cate); err != nil {
 
 					return ctx.Status(http.StatusInternalServerError).JSON(kornet.MessageNew(err.Error(), true))
 				}
+			}
+
+			if _, err = nutrientRepo.CreateFast(productId, categories); err != nil {
+
+				return ctx.Status(http.StatusInternalServerError).JSON(kornet.MessageNew(err.Error(), true))
 			}
 		}
 
@@ -391,6 +401,8 @@ func AdminController(pn papaya.NetImpl, router swag.SwagRouterImpl) error {
 		"responses": swag.CreatedJSON(&kornet.Message{}),
 	}, func(ctx *swag.SwagContext) error {
 
+		var err error
+
 		kReq, _ := ctx.Kornet()
 
 		query := kReq.Query
@@ -404,7 +416,17 @@ func AdminController(pn papaya.NetImpl, router swag.SwagRouterImpl) error {
 			return ctx.Status(http.StatusBadRequest).JSON(kornet.MessageNew("id is empty", true))
 		}
 
-		if err := productRepo.DeleteFast(id); err != nil {
+		if err = nutrientRepo.DeleteFast(id); err != nil {
+
+			return ctx.Status(http.StatusInternalServerError).JSON(kornet.MessageNew(err.Error(), true))
+		}
+
+		if err = categoryRepo.UnlinkByProductId(id); err != nil {
+
+			return ctx.Status(http.StatusInternalServerError).JSON(kornet.MessageNew(err.Error(), true))
+		}
+
+		if err = productRepo.DeleteFast(id); err != nil {
 
 			return ctx.Status(http.StatusInternalServerError).JSON(kornet.MessageNew(err.Error(), true))
 		}
@@ -476,6 +498,120 @@ func AdminController(pn papaya.NetImpl, router swag.SwagRouterImpl) error {
 		}
 
 		return ctx.Status(http.StatusBadRequest).JSON(kornet.MessageNew("page is zero", true))
+	})
+
+	router.Post("/product/upload", &m.KMap{
+		"AuthToken":   true,
+		"Admin":       true,
+		"description": "Upload Product Image",
+		"request": &m.KMap{
+			"params": &m.KMap{
+				"productId": "string",
+			},
+		},
+		"responses": swag.CreatedJSON(&kornet.Message{}),
+	}, func(ctx *swag.SwagContext) error {
+
+		var err error
+
+		kReq, _ := ctx.Kornet()
+
+		productIds := m.KValueToString(kReq.Query.Get("productId"))
+
+		if productIds == "" {
+
+			return ctx.Status(http.StatusBadRequest).JSON(kornet.MessageNew("invalid productId", true))
+		}
+
+		productId := repo.Ids(productIds)
+
+		var check *models.Products
+
+		if check, err = productRepo.SearchFastById(productId); err != nil {
+
+			return ctx.Status(http.StatusBadRequest).JSON(kornet.MessageNew("product not found", true))
+		}
+
+		name := util.SafePathName(check.Name)
+
+		var form *multipart.Form
+		var extensions []string
+		var ext string
+
+		if form, err = ctx.MultipartForm(); err != nil {
+
+			return ctx.Status(http.StatusBadRequest).JSON(kornet.MessageNew("bad request", true))
+		}
+
+		images := m.Keys([]string{
+			"image/jpeg",
+			"image/png",
+		})
+
+		var found bool
+
+		found = false
+
+		for k, h := range form.File {
+
+			switch k {
+			case "img", "image":
+
+				if len(h) > 0 {
+
+					header := h[0]
+					cTy := header.Header.Get("Content-Type")
+
+					if images.Contain(cTy) {
+
+						if extensions, err = mime.ExtensionsByType(cTy); err != nil {
+
+							return ctx.Status(http.StatusInternalServerError).JSON(kornet.MessageNew("unable to get name of extension", true))
+						}
+
+						n := len(extensions)
+
+						if n > 0 {
+
+							ext = extensions[n-1] // the last thing maybe a good choice
+
+							ext = ".png" // force use PNG formatter
+
+							output := "assets/public/products/" + name + ext
+
+							//if err = ctx.SaveFile(header, "assets/public/products/"+name+ext); err != nil {
+							//
+							//	return ctx.Status(http.StatusInternalServerError).JSON(kornet.MessageNew("unable to save image", true))
+							//}
+
+							check.Image = name + ext
+
+							if err = productRepo.Update(productId, check); err != nil {
+
+								return ctx.Status(http.StatusInternalServerError).JSON(kornet.MessageNew(err.Error(), true))
+							}
+
+							return util.SaveImage(k, ext, output)(ctx.Ctx)
+						}
+					}
+				}
+
+				found = true
+				break
+			}
+
+			if found {
+
+				break
+			}
+		}
+
+		if !found {
+
+			return ctx.Status(http.StatusBadRequest).JSON(kornet.MessageNew("unsupported format", true))
+		}
+
+		return ctx.Status(http.StatusInternalServerError).JSON(kornet.MessageNew("something wrong", true))
 	})
 
 	return nil

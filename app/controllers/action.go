@@ -78,7 +78,7 @@ func ActionController(pn papaya.NetImpl, router swag.SwagRouterImpl) error {
 					"postal_code":  user.PostalCode,
 					"admin":        user.Admin,
 					"verify":       user.Verify,
-					"balance":      balance,
+					"balance":      balance.BigInt(),
 				})
 			}
 		}
