@@ -14,7 +14,7 @@ import (
 	"skfw/papaya/koala/kornet"
 	m "skfw/papaya/koala/mapping"
 	"skfw/papaya/koala/pp"
-	repo "skfw/papaya/pigeon/templates/basicAuth/repository"
+	bacx "skfw/papaya/pigeon/templates/basicAuth/util"
 )
 
 func AdminController(pn papaya.NetImpl, router swag.SwagRouterImpl) error {
@@ -59,7 +59,7 @@ func AdminController(pn papaya.NetImpl, router swag.SwagRouterImpl) error {
 
 		userId := m.KValueToString(kReq.Query.Get("userId"))
 
-		userIdx := repo.Ids(userId)
+		userIdx := bacx.Ids(userId)
 
 		if err = userRepo.Topup(userIdx, balance); err != nil {
 
@@ -181,7 +181,7 @@ func AdminController(pn papaya.NetImpl, router swag.SwagRouterImpl) error {
 		// add category
 		if check != nil {
 
-			productId := repo.Ids(check.ID)
+			productId := bacx.Ids(check.ID)
 
 			for _, cate := range categories {
 
@@ -230,7 +230,7 @@ func AdminController(pn papaya.NetImpl, router swag.SwagRouterImpl) error {
 		name := m.KValueToString(data.Get("name"))
 		//description := m.KValueToString(data.Get("description"))
 
-		productIdx := repo.Ids(productId)
+		productIdx := bacx.Ids(productId)
 
 		if check, _ := productRepo.SearchFastById(productIdx); check != nil {
 
@@ -355,9 +355,9 @@ func AdminController(pn papaya.NetImpl, router swag.SwagRouterImpl) error {
 		stocks := util.ValueToInt(data.Get("stocks"))
 		categories := util.ValueToArrayStr(data.Get("categories"))
 
-		id := repo.Ids(ids)
+		id := bacx.Ids(ids)
 
-		if !repo.EmptyIdx(id) {
+		if !bacx.EmptyIdx(id) {
 
 			if product, _ := productRepo.SearchFastById(id); product != nil {
 
@@ -373,7 +373,7 @@ func AdminController(pn papaya.NetImpl, router swag.SwagRouterImpl) error {
 
 				for _, cate := range categories {
 
-					if err = categoryRepo.Add(repo.Ids(product.ID), cate); err != nil {
+					if err = categoryRepo.Add(bacx.Ids(product.ID), cate); err != nil {
 
 						return ctx.Status(http.StatusInternalServerError).JSON(kornet.MessageNew(err.Error(), true))
 					}
@@ -409,9 +409,9 @@ func AdminController(pn papaya.NetImpl, router swag.SwagRouterImpl) error {
 
 		ids := m.KValueToString(query.Get("id"))
 
-		id := repo.Ids(ids)
+		id := bacx.Ids(ids)
 
-		if repo.EmptyIdx(id) {
+		if bacx.EmptyIdx(id) {
 
 			return ctx.Status(http.StatusBadRequest).JSON(kornet.MessageNew("id is empty", true))
 		}
@@ -455,7 +455,7 @@ func AdminController(pn papaya.NetImpl, router swag.SwagRouterImpl) error {
 
 		page := util.ValueToInt(kReq.Query.Get("page"))
 		size := util.ValueToInt(kReq.Query.Get("size"))
-		maxCatch := pp.QInt(util.ValueToInt(kReq.Query.Get("maxCatch")), 200)
+		maxCatch := pp.Qint(util.ValueToInt(kReq.Query.Get("maxCatch")), 200)
 
 		var offset int
 
@@ -473,7 +473,7 @@ func AdminController(pn papaya.NetImpl, router swag.SwagRouterImpl) error {
 
 			for _, user := range users {
 
-				userId := repo.Ids(user.ID)
+				userId := bacx.Ids(user.ID)
 
 				var transactions []m.KMapImpl
 
@@ -523,7 +523,7 @@ func AdminController(pn papaya.NetImpl, router swag.SwagRouterImpl) error {
 			return ctx.Status(http.StatusBadRequest).JSON(kornet.MessageNew("invalid productId", true))
 		}
 
-		productId := repo.Ids(productIds)
+		productId := bacx.Ids(productIds)
 
 		var check *models.Products
 

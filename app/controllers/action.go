@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"database/sql"
 	"encoding/json"
 	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
@@ -13,7 +14,7 @@ import (
 	"skfw/papaya/koala/kornet"
 	m "skfw/papaya/koala/mapping"
 	mo "skfw/papaya/pigeon/templates/basicAuth/models"
-	repo "skfw/papaya/pigeon/templates/basicAuth/repository"
+	bacx "skfw/papaya/pigeon/templates/basicAuth/util"
 	"time"
 )
 
@@ -57,7 +58,7 @@ func ActionController(pn papaya.NetImpl, router swag.SwagRouterImpl) error {
 
 				var balance decimal.Decimal
 
-				idx := repo.Ids(user.ID)
+				idx := bacx.Ids(user.ID)
 
 				if balance, err = userRepo.Balance(idx); err != nil {
 
@@ -142,13 +143,13 @@ func ActionController(pn papaya.NetImpl, router swag.SwagRouterImpl) error {
 						Name:        name,
 						Username:    user.Username,
 						Email:       user.Email,
-						Gender:      gender,
-						DOB:         DOB,
-						Address:     address,
-						Phone:       phone,
-						CountryCode: countryCode,
-						City:        city,
-						PostalCode:  postalCode,
+						Gender:      sql.NullString{String: gender, Valid: true},
+						DOB:         sql.NullTime{Time: DOB, Valid: true},
+						Address:     sql.NullString{String: address, Valid: true},
+						Phone:       sql.NullString{String: phone, Valid: true},
+						CountryCode: sql.NullString{String: countryCode, Valid: true},
+						City:        sql.NullString{String: city, Valid: true},
+						PostalCode:  sql.NullString{String: postalCode, Valid: true},
 					},
 				}
 
@@ -194,7 +195,7 @@ func ActionController(pn papaya.NetImpl, router swag.SwagRouterImpl) error {
 
 					offset = page*size - size
 
-					idx := repo.Ids(user.ID)
+					idx := bacx.Ids(user.ID)
 
 					if carts, err = cartRepo.CatchAll(idx, offset, size); err != nil {
 
@@ -208,7 +209,7 @@ func ActionController(pn papaya.NetImpl, router swag.SwagRouterImpl) error {
 
 						var product *models.Products
 
-						if product, err = productRepo.SearchUnscopedFastById(repo.Ids(cart.ProductID)); err != nil {
+						if product, err = productRepo.SearchUnscopedFastById(bacx.Ids(cart.ProductID)); err != nil {
 
 							return ctx.Status(http.StatusInternalServerError).JSON(kornet.MessageNew(err.Error(), true))
 						}
@@ -262,8 +263,8 @@ func ActionController(pn papaya.NetImpl, router swag.SwagRouterImpl) error {
 				productId := m.KValueToString(data.Get("productId"))
 				qty := util.ValueToInt(data.Get("qty"))
 
-				userIdx := repo.Ids(user.ID)
-				productIdx := repo.Ids(productId)
+				userIdx := bacx.Ids(user.ID)
+				productIdx := bacx.Ids(productId)
 
 				// check stocks
 				if check, _ := productRepo.SearchFastById(productIdx); check != nil {
@@ -307,7 +308,7 @@ func ActionController(pn papaya.NetImpl, router swag.SwagRouterImpl) error {
 
 				ids := m.KValueToString(kReq.Query.Get("id"))
 
-				idx := repo.Ids(ids)
+				idx := bacx.Ids(ids)
 
 				data := &m.KMap{}
 
@@ -318,7 +319,7 @@ func ActionController(pn papaya.NetImpl, router swag.SwagRouterImpl) error {
 
 				qty := util.ValueToInt(data.Get("qty"))
 
-				userIdx := repo.Ids(user.ID)
+				userIdx := bacx.Ids(user.ID)
 
 				cart := &models.Cart{
 					ID:  ids,
@@ -335,7 +336,7 @@ func ActionController(pn papaya.NetImpl, router swag.SwagRouterImpl) error {
 				}
 
 				productId := oldCart.ProductID
-				productIdx = repo.Ids(productId)
+				productIdx = bacx.Ids(productId)
 
 				// check stocks
 				if check, _ := productRepo.SearchFastById(productIdx); check != nil {
@@ -377,8 +378,8 @@ func ActionController(pn papaya.NetImpl, router swag.SwagRouterImpl) error {
 
 				ids := m.KValueToString(kReq.Query.Get("id"))
 
-				idx := repo.Ids(ids)
-				userIdx := repo.Ids(user.ID)
+				idx := bacx.Ids(ids)
+				userIdx := bacx.Ids(user.ID)
 
 				if err := cartRepo.SafeDelete(idx, userIdx); err != nil {
 
@@ -422,7 +423,7 @@ func ActionController(pn papaya.NetImpl, router swag.SwagRouterImpl) error {
 
 					offset = page*size - size
 
-					idx := repo.Ids(user.ID)
+					idx := bacx.Ids(user.ID)
 
 					if transactions, err = transactionRepo.CatchAll(idx, offset, size); err != nil {
 
@@ -443,7 +444,7 @@ func ActionController(pn papaya.NetImpl, router swag.SwagRouterImpl) error {
 
 							var product *models.Products
 
-							productId := repo.Ids(cart.ProductID)
+							productId := bacx.Ids(cart.ProductID)
 
 							if product, err = productRepo.SearchFastById(productId); err != nil {
 
@@ -506,7 +507,7 @@ func ActionController(pn papaya.NetImpl, router swag.SwagRouterImpl) error {
 
 				paymentMethod := m.KValueToString(data.Get("payment_method"))
 
-				userIdx := repo.Ids(user.ID)
+				userIdx := bacx.Ids(user.ID)
 
 				if err = userRepo.PayCheck(userIdx); err != nil {
 
@@ -545,7 +546,7 @@ func ActionController(pn papaya.NetImpl, router swag.SwagRouterImpl) error {
 
 			if user, ok := ctx.Target().(*mo.UserModel); ok {
 
-				idx := repo.Ids(user.ID)
+				idx := bacx.Ids(user.ID)
 
 				if bill, err = userRepo.Bill(idx); err != nil {
 

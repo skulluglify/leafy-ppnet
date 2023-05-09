@@ -6,7 +6,7 @@ import (
 	"github.com/shopspring/decimal"
 	"gorm.io/gorm"
 	"leafy/app/models"
-	"skfw/papaya/pigeon/templates/basicAuth/repository"
+	bacx "skfw/papaya/pigeon/templates/basicAuth/util"
 )
 
 type ProductRepository struct {
@@ -99,7 +99,7 @@ func (p *ProductRepository) SearchFastById(id uuid.UUID) (*models.Products, erro
 
 	p.NewSession()
 
-	if repository.EmptyIdx(id) {
+	if bacx.EmptyIdx(id) {
 
 		return nil, errors.New("id is empty")
 	}
@@ -107,7 +107,7 @@ func (p *ProductRepository) SearchFastById(id uuid.UUID) (*models.Products, erro
 	var products []models.Products
 	products = make([]models.Products, 0)
 
-	if p.DB.Where("id = ?", repository.Idx(id)).Limit(1).Find(&products).Error != nil {
+	if p.DB.Where("id = ?", bacx.Idx(id)).Limit(1).Find(&products).Error != nil {
 
 		return nil, errors.New("unable to search product")
 	}
@@ -124,7 +124,7 @@ func (p *ProductRepository) SearchUnscopedFastById(id uuid.UUID) (*models.Produc
 
 	p.NewSession()
 
-	if repository.EmptyIdx(id) {
+	if bacx.EmptyIdx(id) {
 
 		return nil, errors.New("id is empty")
 	}
@@ -133,7 +133,7 @@ func (p *ProductRepository) SearchUnscopedFastById(id uuid.UUID) (*models.Produc
 	products = make([]models.Products, 0)
 
 	// find all products
-	if p.DB.Unscoped().Where("id = ?", repository.Idx(id)).Limit(1).Find(&products).Error != nil {
+	if p.DB.Unscoped().Where("id = ?", bacx.Idx(id)).Limit(1).Find(&products).Error != nil {
 
 		return nil, errors.New("unable to search product")
 	}
@@ -154,7 +154,7 @@ func (p *ProductRepository) CreateFast(name string, description string, price de
 	}
 
 	product := &models.Products{
-		ID:          repository.Idx(uuid.New()),
+		ID:          bacx.Idx(uuid.New()),
 		Name:        name,
 		Description: description,
 		Price:       price,
@@ -171,13 +171,13 @@ func (p *ProductRepository) CreateFast(name string, description string, price de
 
 func (p *ProductRepository) Update(id uuid.UUID, product *models.Products) error {
 
-	if repository.EmptyIdx(id) {
+	if bacx.EmptyIdx(id) {
 
 		return errors.New("id is empty")
 	}
 
 	// merge Id
-	product.ID = repository.Idx(id)
+	product.ID = bacx.Idx(id)
 
 	if check, _ := p.SearchFastById(id); check != nil {
 
@@ -192,13 +192,13 @@ func (p *ProductRepository) Update(id uuid.UUID, product *models.Products) error
 
 func (p *ProductRepository) DeleteFast(id uuid.UUID) error {
 
-	if repository.EmptyIdx(id) {
+	if bacx.EmptyIdx(id) {
 
 		return errors.New("id is empty")
 	}
 
 	// merge Id
-	ids := repository.Idx(id)
+	ids := bacx.Idx(id)
 
 	if check, _ := p.SearchFastById(id); check != nil {
 

@@ -6,7 +6,7 @@ import (
 	"leafy/app/tasks"
 	"skfw/papaya"
 	"skfw/papaya/bunny/swag"
-	"skfw/papaya/pigeon/templates/basicAuth/repository"
+	bac "skfw/papaya/pigeon/templates/basicAuth/controllers"
 	"time"
 )
 
@@ -41,7 +41,7 @@ func App(pn papaya.NetImpl) error {
 	activeDuration := time.Minute * 30 // interval
 	maxSessions := 6
 
-	basicAuth := repository.BasicAuthNew(conn, expired, activeDuration, maxSessions)
+	basicAuth := bac.BasicAuthNew(conn, expired, activeDuration, maxSessions)
 	basicAuth.Bind(swagger, userRouter)
 
 	swagger.AddTask(tasks.MakeAdminTask())

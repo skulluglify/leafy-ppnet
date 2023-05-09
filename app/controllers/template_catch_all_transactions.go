@@ -7,7 +7,7 @@ import (
 	"leafy/app/repository"
 	"skfw/papaya"
 	m "skfw/papaya/koala/mapping"
-	repo "skfw/papaya/pigeon/templates/basicAuth/repository"
+	bacx "skfw/papaya/pigeon/templates/basicAuth/util"
 )
 
 type CatchAllTransactionsHandler func(userId uuid.UUID, page int, size int) ([]m.KMapImpl, error)
@@ -52,7 +52,7 @@ func TemplateCatchAllTransactions(pn papaya.NetImpl) CatchAllTransactionsHandler
 
 					var product *models.Products
 
-					productId := repo.Ids(cart.ProductID)
+					productId := bacx.Ids(cart.ProductID)
 
 					if product, err = productRepo.SearchFastById(productId); err != nil {
 

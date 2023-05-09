@@ -6,7 +6,7 @@ import (
 	"github.com/shopspring/decimal"
 	"gorm.io/gorm"
 	"leafy/app/models"
-	"skfw/papaya/pigeon/templates/basicAuth/repository"
+	bacx "skfw/papaya/pigeon/templates/basicAuth/util"
 )
 
 type UserRepository struct {
@@ -98,7 +98,7 @@ func (u *UserRepository) SearchFastById(id uuid.UUID) (*models.Users, error) {
 
 	u.NewSession()
 
-	if repository.EmptyIdx(id) {
+	if bacx.EmptyIdx(id) {
 
 		return nil, errors.New("id is empty")
 	}
@@ -106,7 +106,7 @@ func (u *UserRepository) SearchFastById(id uuid.UUID) (*models.Users, error) {
 	var users []models.Users
 	users = make([]models.Users, 0)
 
-	ids := repository.Idx(id)
+	ids := bacx.Idx(id)
 
 	if u.DB.Where("id = ?", ids).Limit(1).Find(&users).Error != nil {
 
@@ -139,9 +139,9 @@ func (u *UserRepository) Update(user *models.Users) error {
 
 	u.NewSession()
 
-	userId := repository.Ids(user.ID)
+	userId := bacx.Ids(user.ID)
 
-	if repository.EmptyIdx(userId) {
+	if bacx.EmptyIdx(userId) {
 
 		return errors.New("invalid id")
 	}
@@ -195,12 +195,12 @@ func (u *UserRepository) PayCheck(id uuid.UUID) error {
 
 	var err error
 
-	if repository.EmptyIdx(id) {
+	if bacx.EmptyIdx(id) {
 
 		return errors.New("invalid id")
 	}
 
-	ids := repository.Idx(id)
+	ids := bacx.Idx(id)
 
 	var balance decimal.Decimal
 
@@ -243,14 +243,14 @@ func (u *UserRepository) Balance(id uuid.UUID) (decimal.Decimal, error) {
 
 	noop := decimal.New(0, 0)
 
-	if repository.EmptyIdx(id) {
+	if bacx.EmptyIdx(id) {
 
 		return noop, errors.New("invalid id")
 	}
 
 	var err error
 
-	ids := repository.Idx(id)
+	ids := bacx.Idx(id)
 
 	type Row struct {
 		Balance decimal.Decimal
@@ -277,14 +277,14 @@ func (u *UserRepository) Bill(id uuid.UUID) (decimal.Decimal, error) {
 
 	noop := decimal.New(0, 0)
 
-	if repository.EmptyIdx(id) {
+	if bacx.EmptyIdx(id) {
 
 		return noop, errors.New("invalid id")
 	}
 
 	var err error
 
-	ids := repository.Idx(id)
+	ids := bacx.Idx(id)
 	bill := decimal.New(0, 0)
 
 	type Rows []struct {
@@ -359,12 +359,12 @@ func (u *UserRepository) Topup(id uuid.UUID, balance decimal.Decimal) error {
 
 	u.NewSession()
 
-	if repository.EmptyIdx(id) {
+	if bacx.EmptyIdx(id) {
 
 		return errors.New("invalid userId")
 	}
 
-	ids := repository.Idx(id)
+	ids := bacx.Idx(id)
 
 	var currBalance decimal.Decimal
 

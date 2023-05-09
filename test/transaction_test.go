@@ -17,7 +17,7 @@ import (
 	"skfw/papaya/pigeon"
 	"skfw/papaya/pigeon/drivers/common"
 	"skfw/papaya/pigeon/drivers/postgresql"
-	"skfw/papaya/pigeon/templates/basicAuth/repository"
+	bacx "skfw/papaya/pigeon/templates/basicAuth/util"
 	"testing"
 	"time"
 )
@@ -84,9 +84,9 @@ func TestMergeData(t *testing.T) {
 	prepared, _ = transactions.DB()
 	prepared.Query("DELETE FROM transactions")
 
-	pass, _ := repository.HashPassword("User@1234")
+	pass, _ := bacx.HashPassword("User@1234")
 
-	adminId = repository.Idx(uuid.New())
+	adminId = bacx.Idx(uuid.New())
 
 	users.Create(map[string]any{
 		"id":       adminId,
@@ -96,7 +96,7 @@ func TestMergeData(t *testing.T) {
 		"admin":    true,
 	})
 
-	userId = repository.Idx(uuid.New())
+	userId = bacx.Idx(uuid.New())
 
 	users.Create(map[string]any{
 		"id":       userId,

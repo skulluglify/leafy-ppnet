@@ -5,7 +5,7 @@ import (
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 	"leafy/app/models"
-	"skfw/papaya/pigeon/templates/basicAuth/repository"
+	bacx "skfw/papaya/pigeon/templates/basicAuth/util"
 )
 
 type TransactionRepository struct {
@@ -69,12 +69,12 @@ func (t *TransactionRepository) CatchAll(userId uuid.UUID, offset int, size int)
 
 	t.NewSession()
 
-	if repository.EmptyIdx(userId) {
+	if bacx.EmptyIdx(userId) {
 
 		return nil, errors.New("invalid userId")
 	}
 
-	userIds := repository.Idx(userId)
+	userIds := bacx.Idx(userId)
 
 	var transactions []models.Transactions
 
@@ -92,7 +92,7 @@ func (t *TransactionRepository) SearchFast(cartId uuid.UUID) (*models.Transactio
 
 	t.NewSession()
 
-	if repository.EmptyIdx(cartId) {
+	if bacx.EmptyIdx(cartId) {
 
 		return nil, errors.New("invalid cartId")
 	}
@@ -132,12 +132,12 @@ func (t *TransactionRepository) SafeSearchFast(userId uuid.UUID, cartId uuid.UUI
 
 	t.NewSession()
 
-	if repository.EmptyIdx(userId) || repository.EmptyIdx(cartId) {
+	if bacx.EmptyIdx(userId) || bacx.EmptyIdx(cartId) {
 
 		return nil, errors.New("userId or cartId is invalid id")
 	}
 
-	userIds := repository.Idx(userId)
+	userIds := bacx.Idx(userId)
 
 	var transactions []models.Transactions
 	transactions = make([]models.Transactions, 0)
@@ -175,12 +175,12 @@ func (t *TransactionRepository) CreateFast(userId uuid.UUID, method string) (*mo
 
 	var err error
 
-	if repository.EmptyIdx(userId) {
+	if bacx.EmptyIdx(userId) {
 
 		return nil, errors.New("invalid userId")
 	}
 
-	userIds := repository.Idx(userId)
+	userIds := bacx.Idx(userId)
 
 	// update cart session
 	t.modelCart = t.modelCart.Session(&gorm.Session{})
@@ -203,7 +203,7 @@ func (t *TransactionRepository) CreateFast(userId uuid.UUID, method string) (*mo
 		return nil, errors.New("cart is empty")
 	}
 
-	id := repository.Idx(uuid.New())
+	id := bacx.Idx(uuid.New())
 
 	var transaction models.Transactions
 	transaction = models.Transactions{
@@ -282,7 +282,7 @@ func (t *TransactionRepository) Verify(transaction *models.Transactions) error {
 
 	var err error
 
-	if repository.EmptyIds(transaction.ID) {
+	if bacx.EmptyIds(transaction.ID) {
 
 		return errors.New("invalid userId")
 	}

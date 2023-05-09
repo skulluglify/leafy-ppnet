@@ -6,7 +6,7 @@ import (
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 	"leafy/app/models"
-	"skfw/papaya/pigeon/templates/basicAuth/repository"
+	bacx "skfw/papaya/pigeon/templates/basicAuth/util"
 )
 
 type CartRepository struct {
@@ -66,12 +66,12 @@ func (c *CartRepository) CatchAll(userId uuid.UUID, offset int, limit int) ([]mo
 
 	c.NewSession()
 
-	if repository.EmptyIdx(userId) {
+	if bacx.EmptyIdx(userId) {
 
 		return nil, errors.New("invalid userId")
 	}
 
-	userIds := repository.Idx(userId)
+	userIds := bacx.Idx(userId)
 
 	var carts []models.Cart
 	carts = make([]models.Cart, 0)
@@ -95,13 +95,13 @@ func (c *CartRepository) SearchFast(userId uuid.UUID, productId uuid.UUID) (*mod
 
 	c.NewSession()
 
-	if repository.EmptyIdx(userId) || repository.EmptyIdx(productId) {
+	if bacx.EmptyIdx(userId) || bacx.EmptyIdx(productId) {
 
 		return nil, errors.New("userId or productId is invalid id")
 	}
 
-	userIds := repository.Idx(userId)
-	productIds := repository.Idx(productId)
+	userIds := bacx.Idx(userId)
+	productIds := bacx.Idx(productId)
 
 	var carts []models.Cart
 	carts = make([]models.Cart, 0)
@@ -123,12 +123,12 @@ func (c *CartRepository) SearchFastById(id uuid.UUID) (*models.Cart, error) {
 
 	c.NewSession()
 
-	if repository.EmptyIdx(id) {
+	if bacx.EmptyIdx(id) {
 
 		return nil, errors.New("invalid id")
 	}
 
-	ids := repository.Idx(id)
+	ids := bacx.Idx(id)
 
 	var carts []models.Cart
 	carts = make([]models.Cart, 0)
@@ -150,13 +150,13 @@ func (c *CartRepository) SafeSearchFastById(id uuid.UUID, userId uuid.UUID) (*mo
 
 	c.NewSession()
 
-	if repository.EmptyIdx(id) || repository.EmptyIdx(userId) {
+	if bacx.EmptyIdx(id) || bacx.EmptyIdx(userId) {
 
 		return nil, errors.New("id or userId is invalid id")
 	}
 
-	ids := repository.Idx(id)
-	userIds := repository.Idx(userId)
+	ids := bacx.Idx(id)
+	userIds := bacx.Idx(userId)
 
 	var carts []models.Cart
 	carts = make([]models.Cart, 0)
@@ -178,7 +178,7 @@ func (c *CartRepository) CreateFast(userId uuid.UUID, productId uuid.UUID, qty i
 
 	id := uuid.New()
 
-	if repository.EmptyIdx(userId) || repository.EmptyIdx(productId) {
+	if bacx.EmptyIdx(userId) || bacx.EmptyIdx(productId) {
 
 		return nil, errors.New("userId or productId is invalid id")
 	}
@@ -190,9 +190,9 @@ func (c *CartRepository) CreateFast(userId uuid.UUID, productId uuid.UUID, qty i
 
 	var cart models.Cart
 	cart = models.Cart{
-		ID:            repository.Idx(id),
-		UserID:        repository.Idx(userId),
-		ProductID:     repository.Idx(productId),
+		ID:            bacx.Idx(id),
+		UserID:        bacx.Idx(userId),
+		ProductID:     bacx.Idx(productId),
 		TransactionID: sql.NullString{Valid: false},
 		Qty:           qty,
 	}
@@ -220,7 +220,7 @@ func (c *CartRepository) Update(cart *models.Cart) error {
 
 	var err error
 
-	idx := repository.Ids(cart.ID)
+	idx := bacx.Ids(cart.ID)
 
 	var oldCart *models.Cart
 
@@ -233,11 +233,11 @@ func (c *CartRepository) Update(cart *models.Cart) error {
 	cart.UserID = oldCart.UserID
 	cart.ProductID = oldCart.ProductID
 
-	productId := repository.Ids(cart.ProductID)
+	productId := bacx.Ids(cart.ProductID)
 
 	if cart.Qty == 0 {
 
-		cartId := repository.Ids(cart.ID)
+		cartId := bacx.Ids(cart.ID)
 
 		if err = c.Delete(cartId); err != nil {
 
@@ -271,8 +271,8 @@ func (c *CartRepository) SafeUpdate(userId uuid.UUID, cart *models.Cart) error {
 
 	var err error
 
-	idx := repository.Ids(cart.ID)
-	userIdx := repository.Idx(userId)
+	idx := bacx.Ids(cart.ID)
+	userIdx := bacx.Idx(userId)
 
 	var oldCart *models.Cart
 
@@ -287,7 +287,7 @@ func (c *CartRepository) SafeUpdate(userId uuid.UUID, cart *models.Cart) error {
 
 	if cart.Qty == 0 {
 
-		cartId := repository.Ids(cart.ID)
+		cartId := bacx.Ids(cart.ID)
 
 		if err = c.SafeDelete(cartId, userId); err != nil {
 
@@ -298,7 +298,7 @@ func (c *CartRepository) SafeUpdate(userId uuid.UUID, cart *models.Cart) error {
 		return nil
 	}
 
-	productId := repository.Ids(cart.ProductID)
+	productId := bacx.Ids(cart.ProductID)
 
 	// check stocks
 	if check, _ := c.productRepo.SearchFastById(productId); check != nil {
@@ -321,7 +321,7 @@ func (c *CartRepository) SafeUpdate(userId uuid.UUID, cart *models.Cart) error {
 
 func (c *CartRepository) Delete(id uuid.UUID) error {
 
-	ids := repository.Idx(id)
+	ids := bacx.Idx(id)
 
 	if _, err := c.SearchFastById(id); err != nil {
 
@@ -338,8 +338,8 @@ func (c *CartRepository) Delete(id uuid.UUID) error {
 
 func (c *CartRepository) SafeDelete(id uuid.UUID, userId uuid.UUID) error {
 
-	ids := repository.Idx(id)
-	userIds := repository.Idx(userId)
+	ids := bacx.Idx(id)
+	userIds := bacx.Idx(userId)
 
 	if _, err := c.SafeSearchFastById(id, userId); err != nil {
 

@@ -7,7 +7,7 @@ import (
 	"leafy/app/models"
 	"leafy/app/util"
 	m "skfw/papaya/koala/mapping"
-	"skfw/papaya/pigeon/templates/basicAuth/repository"
+	bacx "skfw/papaya/pigeon/templates/basicAuth/util"
 )
 
 type NutrientRepository struct {
@@ -50,12 +50,12 @@ func (n *NutrientRepository) SearchFastByProductId(productId uuid.UUID) ([]model
 
 	n.NewSession()
 
-	if repository.EmptyIdx(productId) {
+	if bacx.EmptyIdx(productId) {
 
 		return nil, errors.New("invalid productId")
 	}
 
-	productIds := repository.Idx(productId)
+	productIds := bacx.Idx(productId)
 
 	var nutrients []models.Nutrients
 	nutrients = make([]models.Nutrients, 0)
@@ -76,9 +76,9 @@ func (n *NutrientRepository) MapCatchAll(data []m.KMapImpl) []m.KMapImpl {
 	for _, product := range data {
 
 		ids := m.KValueToString(product.Get("id"))
-		id := repository.Ids(ids)
+		id := bacx.Ids(ids)
 
-		if repository.EmptyIdx(id) {
+		if bacx.EmptyIdx(id) {
 
 			continue
 		}
@@ -113,12 +113,12 @@ func (n *NutrientRepository) DeleteFast(productId uuid.UUID) error {
 
 	var err error
 
-	if repository.EmptyIdx(productId) {
+	if bacx.EmptyIdx(productId) {
 
 		return errors.New("invalid productId")
 	}
 
-	productIds := repository.Idx(productId)
+	productIds := bacx.Idx(productId)
 
 	if err = n.DB.Unscoped().Where("product_id = ?", productIds).Delete(&models.Nutrients{}).Error; err != nil {
 
@@ -140,7 +140,7 @@ func (n *NutrientRepository) CreateFast(productId uuid.UUID, categories []string
 		return nutrients, errors.New("nutrients has been added")
 	}
 
-	productIds := repository.Idx(productId)
+	productIds := bacx.Idx(productId)
 
 	// find nutrients
 	var data []util.Nutrient

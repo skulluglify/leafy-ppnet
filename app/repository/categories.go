@@ -7,7 +7,7 @@ import (
 	"leafy/app/models"
 	m "skfw/papaya/koala/mapping"
 	"skfw/papaya/koala/pp"
-	"skfw/papaya/pigeon/templates/basicAuth/repository"
+	bacx "skfw/papaya/pigeon/templates/basicAuth/util"
 )
 
 type CategoryRepository struct {
@@ -84,12 +84,12 @@ func (c *CategoryRepository) SearchFastById(id uuid.UUID) (*models.Category, err
 
 	c.NewSession()
 
-	if repository.EmptyIdx(id) {
+	if bacx.EmptyIdx(id) {
 
 		return nil, errors.New("invalid id")
 	}
 
-	ids := repository.Idx(id)
+	ids := bacx.Idx(id)
 
 	var categories []models.Category
 
@@ -121,7 +121,7 @@ func (c *CategoryRepository) CreateFast(name string, description string) (*model
 	}
 
 	category := models.Category{
-		ID:          repository.Idx(uuid.New()),
+		ID:          bacx.Idx(uuid.New()),
 		Name:        name,
 		Description: description,
 	}
@@ -138,14 +138,14 @@ func (c *CategoryRepository) Add(productId uuid.UUID, name string) error {
 
 	var err error
 
-	if repository.EmptyIdx(productId) {
+	if bacx.EmptyIdx(productId) {
 
 		return errors.New("invalid productId")
 	}
 
 	var check *models.Category
 
-	productIds := repository.Idx(productId)
+	productIds := bacx.Idx(productId)
 
 	categories := models.Categories{
 		ProductId: productIds,
@@ -203,7 +203,7 @@ func (c *CategoryRepository) Categories(productId uuid.UUID) []string {
 
 	cats = make([]string, 0)
 
-	if repository.EmptyIdx(productId) {
+	if bacx.EmptyIdx(productId) {
 
 		return cats
 	}
@@ -212,7 +212,7 @@ func (c *CategoryRepository) Categories(productId uuid.UUID) []string {
 		Name string
 	}
 
-	ids := repository.Idx(productId)
+	ids := bacx.Idx(productId)
 
 	var categories []Row
 	categories = make([]Row, 0)
@@ -254,7 +254,7 @@ func (c *CategoryRepository) CatchAll(products []models.Products) []m.KMapImpl {
 
 	for _, product := range products {
 
-		cats := c.Categories(repository.Ids(product.ID))
+		cats := c.Categories(bacx.Ids(product.ID))
 
 		temp := &m.KMap{
 			"id":          product.ID,
@@ -327,12 +327,12 @@ func (c *CategoryRepository) DeleteByName(name string) error {
 
 func (c *CategoryRepository) UnlinkByProductId(productId uuid.UUID) error {
 
-	if repository.EmptyIdx(productId) {
+	if bacx.EmptyIdx(productId) {
 
 		return errors.New("invalid productId")
 	}
 
-	productIds := repository.Idx(productId)
+	productIds := bacx.Idx(productId)
 
 	var err error
 
